@@ -1,6 +1,5 @@
-Module 3 -- list.h implementation. 
+Copied over from Module 3.
 
-GIT video talks about making branches and merging changes, but suggests that for now we just all work from the master branch and make sure we are in charge of different files so that no 2 people are editing the same file at the same file
-
-
-Chris test: see if git push works
+1. Copied relevant .o and .c files out of Queue and Hash folders, and pasted directly into utils folder. 
+2. Added webpage.c and webpage.o
+3. Created Makefile (that creates libutils.a library)
