@@ -1,8 +1,16 @@
-CFLAGS=-Wall -pedantic -std=c11 -I../utils/*.h -L../lib/libutils.a -g
-LIBS=-Iutils -lcurl
+CFLAGS=-Wall -pedantic -std=c11 -I../utils -L../lib -g
+LIBS= -lutils -lcurl
 
+
+%.o: %.c %.h	
+					gcc $(CFLAGS) -c $<
+					
+					
 crawler:
 					gcc $(CFLAGS) crawler.c $(LIBS) -o $@
+					
 
 clean:
-					rm -f crawler
+					rm -f *.o crawler
+
+

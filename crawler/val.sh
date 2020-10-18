@@ -1,0 +1,9 @@
+#!/bin/bash
+echo making object files and executables...
+make &>> /dev/null
+
+echo running valgrind...
+valgrind --leak-check=full crawler
+
+echo making clean...
+make clean &>> /dev/null
