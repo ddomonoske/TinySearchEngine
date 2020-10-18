@@ -12,11 +12,25 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+static bool print_message = false; // control printing to screen
+
 /* defines each node of a queue */
 typedef struct node {
 	struct node *next;	//point to next node
 	void *data;			//holds data of node
 } node_t;
+
+
+/* 
+ * - prints message to screen with a prefix that includes file name
+ * - only prints to screen when print_message is true
+ */
+static void print(char *message) {
+	if (print_message) {
+		fprintf(stderr,"~hash.c -> ");
+		fprintf(stderr,"%s\n", message);
+	}
+}
 
 
 /* creates new node */
@@ -29,7 +43,7 @@ static node_t* make_node(void *elementp) {
 	if ((p = (node_t*)malloc(sizeof(node_t))) == NULL){
 		return NULL;
 	}
-	printf("node malloc success\n");
+	print("node malloc success\n");
 	
 	p->data = elementp; //both of type void
 	p->next = NULL;
@@ -51,8 +65,8 @@ queue_t* qopen(void) {
 		return NULL;	
 	qp->front = NULL;
 	qp->back = NULL;
-	printf("queue malloc success\n");
-	printf("New queue created\n");
+	print("queue malloc success\n");
+	print("New queue created\n");
 	return (queue_t*)qp;
 }       
 
@@ -65,7 +79,7 @@ void qclose(queue_t *qp) {
 
 	//include case where qp == NULL
 	if (qp == NULL) {
-		printf("Error: queue is NULL\n");
+		print("Error: queue is NULL\n");
 	}
 	else {
 		hp = (qheader_t*)qp; //need to coerce void queue_t object into local qheader_t object
@@ -79,7 +93,7 @@ void qclose(queue_t *qp) {
 			free(prev);	//free *next pointer
 		}
 		free(hp);
-		printf("The queue has been freed\n");
+		print("The queue has been freed\n");
 	}
 		
 }
@@ -94,12 +108,12 @@ int32_t qput(queue_t *qp, void *elementp) {
 	node_t *p;
 	
 	if (qp == NULL) {	
-		printf("Error: queue is NULL\n");
+		print("Error: queue is NULL\n");
 		return 1;
 	}
 	
 	if (elementp == NULL) {	
-		printf("Error: object passed in is NULL\n");
+		print("Error: object passed in is NULL\n");
 		return 1;
 	}
 	
@@ -115,7 +129,7 @@ int32_t qput(queue_t *qp, void *elementp) {
 		hp->back = p;			//set new element as back of queue
 	}
 	
-	printf("Element added to queue\n");
+	print("Element added to queue\n");
 	return 0;
 }
 
@@ -127,14 +141,14 @@ void* qget(queue_t *qp) {
 	void *tmp;
 
 	if (qp == NULL) {	
-		printf("Error: queue is NULL\n");
+		print("Error: queue is NULL\n");
 		return NULL;
 	}
 	
 	hp = (qheader_t*)qp;
 	
 	if (hp->front==NULL) {
-		printf("Error: queue is empty\n");
+		print("Error: queue is empty\n");
 		return NULL;
 	}
 	
@@ -147,7 +161,7 @@ void* qget(queue_t *qp) {
 	//}
 	free(p); //frees *next pointer
 	
-	printf("First element removed and returned\n");
+	print("First element removed and returned\n");
 	return tmp; //returns data stored in first element
 }
 
@@ -158,15 +172,15 @@ void qapply(queue_t *qp, void (*fn)(void* elementp)) {
 	node_t *p;
 	
 	if (qp == NULL || fn == NULL ) {	//checks inputs
-		printf("qp or fn is NULL\n");
+		print("qp or fn is NULL\n");
 	} 
 	else {
 		hp = (qheader_t*)qp;
 		if ( hp->front == NULL ) {
-			printf("queue is empty\n");
+			print("queue is empty\n");
 		} 
 		else {
-			printf("Applying function to every element of the queue.\n");
+			print("Applying function to every element of the queue.\n");
 			
 			p = hp->front; //select first node of queue
 			while (p != NULL) {	//loop through each node of queue
@@ -200,34 +214,34 @@ void* qsearch(queue_t *qp, bool (*searchfn)(void* elementp,const void* keyp), co
 	bool result;
 	
 	if (qp == NULL) {	//check inputs
-		printf("Queue is NULL\n");
+		print("Queue is NULL\n");
 		return NULL;
 	}
 	if (searchfn==NULL) {
-		printf("Error. Function is NULL\n");
+		print("Error. Function is NULL\n");
 		return NULL;
 	}
 	
 	hp = (qheader_t*)qp;
 	
 	if (hp->front==NULL) {
-		printf("Queue is empty\n");
+		print("Queue is empty\n");
 		return NULL;
 	}
 	else {
-		printf("Applying search function to every element of the queue.\n");
+		print("Applying search function to every element of the queue.\n");
 
 		p = hp->front; //select first node of queue
 		while (p != NULL){	//loop through each node of queue
 			if(p->data != NULL){
 				if ((result = searchfn(p->data, skeyp)) == true){ //pass data stored in node into search function. returns boolean
-					printf("Match found based on search key\n");
+					print("Match found based on search key\n");
 					return(p->data);	//returns pointer to element if boolean is true (aka match found!)
 				}
 			}
 			p = p->next;
 		}
-		printf("No match found based on search key\n");
+		print("No match found based on search key\n");
 		return NULL; //if no matches
 	}						
 }
@@ -246,29 +260,29 @@ void* qremove(queue_t *qp,
 	void *tmp;
 	
 	if (qp == NULL) {	//check inputs
-		printf("Queue is NULL\n");
+		print("Queue is NULL\n");
 		return NULL;
 	}
 	if (searchfn==NULL) {
-		printf("Error. Function is NULL\n");
+		print("Error. Function is NULL\n");
 		return NULL;
 	}
 	
 	hp = (qheader_t*)qp;
 	
 	if (hp->front==NULL) {
-		printf("Queue is empty\n");
+		print("Queue is empty\n");
 		return NULL;
 	}
 	else {
-		printf("Applying search function to the queue.\n");
+		print("Applying search function to the queue.\n");
 
 		curr = hp->front; //start at fromt of queue
 
 		while (curr != NULL){ //loop until reach end of queue,
 			if(curr->data != NULL){ //if node has data, then check for match
 				if ((result = searchfn(curr->data, skeyp)) == true){ //IF MATCH FOUND
-					printf("Searched element found, removed, and returned\n");
+					print("Searched element found, removed, and returned\n");
 
 					if(curr==hp->front) { //if match is first node
 						hp->front = curr->next;//removes node from list (by updating front to point to 2nd node)
@@ -292,9 +306,9 @@ void* qremove(queue_t *qp,
 					curr = curr->next; //update curr to next node
 				}
 			}
-			else printf("A node is missing data\n"); //only executes if curr->data == NULL
+			else print("A node is missing data\n"); //only executes if curr->data == NULL
 		}
-		printf("No match found\n"); //only occurs if while loop finishes and no match trigger a return
+		print("No match found\n"); //only occurs if while loop finishes and no match trigger a return
 		return NULL;
 	}						
 }
@@ -309,7 +323,7 @@ void qconcat(queue_t *q1p, queue_t *q2p){
 	qheader_t *hp2;
 
 	if ((q1p == NULL) || (q2p == NULL)) {	
-		printf("Queue is NULL\n");
+		print("Queue is NULL\n");
 	} 
 	else {
 	
