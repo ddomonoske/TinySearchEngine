@@ -1,3 +1,0 @@
-This is just so lib appears as a folder
-
--Chris
