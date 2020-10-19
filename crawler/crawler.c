@@ -49,6 +49,15 @@ int main (void) {
 	
 
 	page = (webpage_new("https://thayer.github.io/engs50/", 0, NULL)); //create new webpage of depth 0
+	
+	
+	/* 
+	****************
+	Insert step 5 code to save page
+	****************
+	*/
+	
+	
 	qp = qopen();
 	hp = hopen(hsize);
 	
