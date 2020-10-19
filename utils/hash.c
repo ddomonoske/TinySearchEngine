@@ -11,7 +11,7 @@
 
 #define get16bits(d) (*((const uint16_t *) (d)))
 
-static bool print_message = true; // control printing to screen
+static bool print_message = false; // control printing to screen
 
 /* the hash table representation is hidden from users of the module */
 typedef struct hheader {
