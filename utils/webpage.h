@@ -23,6 +23,7 @@ int   webpage_getHTMLlen(const webpage_t *page);
 char *webpage_getURL(const webpage_t *page);
 char *webpage_getHTML(const webpage_t *page);
 
+
 /**************** webpage_new ****************/
 /* Allocate and initialize a new webpage_t structure.
  * Do NOT fetch the html from url; instead, the
@@ -35,12 +36,14 @@ char *webpage_getHTML(const webpage_t *page);
  */
 webpage_t *webpage_new(char *url, const int depth, char *html);
 
+
 /**************** webpage_delete ****************/
 /* Delete a webpage_t structure created by webpage_new().
  * This function may be called from something like bag_delete().
  * This function calls free() on both the url and the html, if not NULL.
  */
 void webpage_delete(void *data);
+
 
 /***************** webpage_fetch ******************************/
 /* retrieve HTML from page->url, store into page->html
@@ -87,8 +90,8 @@ bool webpage_fetch(webpage_t *page);
  *     2. on return, *word points to malloc'd space 
  *                   and the caller is responsible for freeing that space.
  */
-
 int webpage_getNextWord(webpage_t *page, int pos, char **word);
+
 
 /****************** webpage_getNextURL ***********************************/
 /* return the next url from html[pos] into result
@@ -116,8 +119,8 @@ int webpage_getNextWord(webpage_t *page, int pos, char **word);
  * }
  *
  */
-
 int webpage_getNextURL(webpage_t *page, int pos, char **result);
+
 
 /***********************************************************************
  * NormalizeURL - attempts to normalize the url
@@ -150,6 +153,7 @@ bool NormalizeURL(char *url);
  * "internal" means that the url begins with INTERNAL_URL_PREFIX.
  */
 bool IsInternalURL(char *url);
+
 
 // All URLs beginning with this prefix are considered "internal"
 static const
