@@ -65,14 +65,14 @@ int main (void) {
 
 	if(webpage_fetch(page)) { //fetch webpage HTML of new webpage_t, returns true if success
 	
-    	while((pos = webpage_getNextURL(page, pos, &URLresult)) > 0) { //go through HTML code looking for URLs
+    	while((pos = webpage_getNextURL(page, pos, &URLresult)) > 0) { //go through webpage looking for embedded URLs
     	//assign each URL string found to URLresult, continue until no more embedded URLs
     	
     		//STEP 4
     		searchResult = hsearch(hp, fn, URLresult, strlen(URLresult)); //search for URL in hashtable, return NULL if not found
     		if (searchResult == NULL) { //if URL is not in hashtable
     			
-    			if (IsInternalURL(URLresult) && (searchResult == NULL)) { //if URL is internal
+    			if (IsInternalURL(URLresult)) { //if URL is internal
     				printf("Internal url: %s\n", URLresult);
     				hput(hp, URLresult, URLresult, strlen(URLresult)); //add new URL into hashtable (use URL itself as hash key bc key must be a char)
 					
