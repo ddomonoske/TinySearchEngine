@@ -16,6 +16,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
+#include <sys/stat.h>
 
 
 /* fn() checks if the car_t pointer matches with the provided key
@@ -33,7 +34,10 @@ bool fn(void* p, const void* keyp) { //requires (void* elementp, const void* key
 		return false;
 }
 
-
+/* pagesave saves info about a webpage (pagep) into a file (id) within the specified directory (dirname)
+ * within file, writes webpage URL, depth, HTML length, and HTML
+ * returns 1 upon completion
+ */
 int32_t pagesave(webpage_t *pagep, int id, char *dirname) {
 	
 	FILE *fp;
@@ -41,11 +45,14 @@ int32_t pagesave(webpage_t *pagep, int id, char *dirname) {
 
 	sprintf(filename, "%d", id); //convert int to string
 	
+	chdir(".."); 
+	chdir(dirname); //changes over to right directory
+	
 	fp = fopen (filename,"w");
 	fprintf(fp,"URL: %s\nDepth: %d\nHTML Length: %d\nHTML: %s\n", webpage_getURL(pagep), webpage_getDepth(pagep), webpage_getHTMLlen(pagep), webpage_getHTML(pagep)); //prints URL, depth, HTML length, and HTML into file
 	
 	fclose(fp);
-	return 0;
+	return 0; //will always return 0
 }
 
 
@@ -55,19 +62,17 @@ int main (void) {
 	webpage_t *intPage; //internal page
 	webpage_t *tmpPage; //used to delete the webpages in the queue
 	webpage_t *searchResult = NULL;
-	
-	page = (webpage_new("https://thayer.github.io/engs50/", 0, NULL)); //create new webpage_t of depth 0
 
-	
 	queue_t *qp; //queue to store webpage_t addresses
-	int pos = 0;
-	char *URLresult; //pointer to character pointer, used to store each embedded URL within a webpage during getNextURL
-	
 	hashtable_t *hp; //hash table to store URLs already fetched
 	uint32_t hsize = 6;
 	
+	page = (webpage_new("https://thayer.github.io/engs50/", 0, NULL)); //create new webpage_t of depth 0
 	qp = qopen();
 	hp = hopen(hsize);
+	
+	int pos = 0; //used for webpage_getNextURL function
+	char *URLresult; //pointer to string, used to store each embedded URL during getNextURL
 	
 	
 	printf("Internal and External URLs: \n");
@@ -76,8 +81,8 @@ int main (void) {
 	
 		//STEP 5
     	uint32_t save;
-		save = pagesave(page, 1, "filler");
-		//printf("\n\nSave status: %d\n\n", save);
+		save = pagesave(page, 1, "pages");
+		printf("\nSave status: %d\n\n", save);
 	
     	while((pos = webpage_getNextURL(page, pos, &URLresult)) > 0) { //go through webpage looking for embedded URLs
     	//assign each URL string found to URLresult, continue until no more embedded URLs
