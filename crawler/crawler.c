@@ -70,23 +70,22 @@ int main (void) {
     	
     		//STEP 4
     		searchResult = hsearch(hp, fn, URLresult, strlen(URLresult)); //search for URL in hashtable, return NULL if not found
-    		if (searchResult == NULL) { //if URL is not in hashtable
+    		if (IsInternalURL(URLresult) && searchResult == NULL) { //check to see if URL is internal
+    			printf("Internal url: %s\n", URLresult);
+    			hput(hp, URLresult, URLresult, strlen(URLresult)); //add new URL into hashtable (use URL itself as hash key bc key must be a char)
+				
+				//STEP 3
+				intPage = (webpage_new(URLresult, 0, NULL)); //create new webpage_t for each internal URL, assign correct depth
+    			qput(qp, intPage); //place new webpage_t into queue
     			
-    			if (IsInternalURL(URLresult)) { //if URL is internal
-    				printf("Internal url: %s\n", URLresult);
-    				hput(hp, URLresult, URLresult, strlen(URLresult)); //add new URL into hashtable (use URL itself as hash key bc key must be a char)
-					
-					//STEP 3
-    				intPage = (webpage_new(URLresult, 1, NULL)); //create new webpage_t for each internal URL, assign correct depth
-    				qput(qp, intPage); //place new webpage_t into queue
-	    		} 
-    			else {	//if URL is external
-    				printf("External url: %s\n", URLresult);
-    				free(URLresult);
-    			}
+	    	} 
+    		else {	//if URL is external
+    			printf("External url: %s\n", URLresult);
+    			free(URLresult);
     		}
-
     	}
+
+
     	
     	printf("\n\n\nStep 3 Verification: \n");
     	
