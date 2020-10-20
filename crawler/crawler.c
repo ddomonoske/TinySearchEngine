@@ -3,6 +3,8 @@
  * 
  * Author: Eric Chen
  * Created: Thu Oct 15 13:31:31 2020 (-0400)
+ * Modified: Chris Lyke
+ *           David Domonoske
  * Version: 
  * 
  * Description: 
@@ -101,21 +103,25 @@ int main (int argc, char *argv[]) {
 	if (argc != 4) {
 		printf("ERROR: Incorrect number of arguments.\n");
 		printf("USAGE: crawler <seedurl> <pagedir> <maxdepth>\n");
+		qclose(qp); //close queue
+		hclose(hp); //close hashtable
 		exit(EXIT_FAILURE);
 	}
 	seedurl = argv[1];
 	pagedir = argv[2];
 	if ( ! isDirExist(argv[2]) ) {
 		printf("The directory '%s' does not exist.\n", argv[2]);
+		qclose(qp); //close queue
+		hclose(hp); //close hashtable
 		exit(EXIT_FAILURE);
 	}
 	if (atoi(argv[3]) < 0) {
 		printf("The max depth must be greater than 0.\n");
+		qclose(qp); //close queue
+		hclose(hp); //close hashtable
 		exit(EXIT_FAILURE);
 	} else
 		maxdepth = atoi(argv[3]);
-	
-	printf("Internal and External URLs: \n");
 	
 	page = (webpage_new(seedurl, 0, NULL)); //create new webpage_t of depth 0
 	do {  // STEP 6: loop through all the pages
