@@ -102,6 +102,10 @@ int main (int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 	seedurl = argv[1];
+	if ( ! IsInternalURL(seedurl) ) {
+		printf("The seed URL is not internal\n");
+		exit(EXIT_FAILURE);
+	}
 	pagedir = argv[2];
 	if ( ! isDirExist(argv[2]) ) {
 		printf("The directory '%s' does not exist.\n", argv[2]);
@@ -137,7 +141,7 @@ int main (int argc, char *argv[]) {
 					//STEP 4
 					searchResult = hsearch(hp, fn, URLresult, strlen(URLresult)); //search for URL in hashtable, return NULL if not found
 				
-					if (IsInternalURL(URLresult) && searchResult == NULL) { //check to see if URL is internal
+					if (IsInternalURL(URLresult) && searchResult == NULL) { //check to see if URL is internal and has not been checked
 						printf("Internal url: %s\n", URLresult);
 						hput(hp, URLresult, URLresult, strlen(URLresult)); //add new URL into hashtable (use URL itself as hash key bc key must be a char)
 					
@@ -145,7 +149,11 @@ int main (int argc, char *argv[]) {
 						intPage = (webpage_new(URLresult, currdepth+1, NULL)); //create new webpage_t for each internal URL, assign correct depth
 						qput(qp, intPage); //place new webpage_t into queue
 					} 
-					else {	//if URL is external or already reached
+					else if ( ! IsInternalURL(URLresult) ) {	//if URL is not internal
+						printf("External url: %s\n", URLresult);
+						free(URLresult);
+					}
+					else {	//if URL is has already been checked (aka found in hash table)
 						free(URLresult);
 					}
 				}
