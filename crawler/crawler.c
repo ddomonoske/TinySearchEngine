@@ -150,6 +150,7 @@ int main (int argc, char *argv[]) {
 				}
 			}
 		}
+		webpage_delete((void*)page);
 	} while ((page = qget(qp)) != NULL) ;
 
 	printf("\nTotal: %d web pages stored\n",id-1);
