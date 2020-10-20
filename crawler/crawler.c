@@ -80,7 +80,7 @@ int main (int argc, char *argv[]) {
 
 	webpage_t *page; 	//initial page we fetch
 	webpage_t *intPage; //internal page
-	webpage_t *tmpPage; //used to delete the webpages in the queue
+	//webpage_t *tmpPage; //used to delete the webpages in the queue
 	webpage_t *searchResult = NULL;
 
 	queue_t *qp; //queue to store webpage_t addresses
@@ -89,9 +89,8 @@ int main (int argc, char *argv[]) {
 
 	char *seedurl;
 	char *pagedir;
-	uint32_t maxdepth, currdepth=0;
+	uint32_t maxdepth, currdepth=0, id=1;
 	
-	page = (webpage_new("https://thayer.github.io/engs50/", 0, NULL)); //create new webpage_t of depth 0
 	qp = qopen();
 	hp = hopen(hsize);
 	
@@ -117,64 +116,61 @@ int main (int argc, char *argv[]) {
 		maxdepth = atoi(argv[3]);
 	
 	printf("Internal and External URLs: \n");
+	
+	page = (webpage_new(seedurl, 0, NULL)); //create new webpage_t of depth 0
+	do {  // STEP 6: loop through all the pages
+		currdepth = webpage_getDepth(page);
+		if (webpage_fetch(page)) { //fetch webpage HTML of new webpage_t, returns true if success
+			
+			//STEP 5
+			pagesave(page, id++, pagedir);  // STEP 6: save to pagedir
+			printf("Saved: %s\n", webpage_getURL(page));
 
-	if(webpage_fetch(page)) { //fetch webpage HTML of new webpage_t, returns true if success
+			if (currdepth < maxdepth) {  // STEP 6: only search page if not at maxdepth
+				pos = 0;
+				while ((pos = webpage_getNextURL(page, pos, &URLresult)) > 0) { //go through webpage looking for embedded URLs
+					//assign each URL string found to URLresult, continue until no more embedded URLs
 
-		//STEP 5
-		uint32_t save;
-		save = pagesave(page, 1, "../pages");
-		printf("\nSave status: %d\n\n", save);
-
-		do {
-			while ((pos = webpage_getNextURL(page, pos, &URLresult)) > 0) { //go through webpage looking for embedded URLs
-				//assign each URL string found to URLresult, continue until no more embedded URLs
-
-				//STEP 4
-				searchResult = hsearch(hp, fn, URLresult, strlen(URLresult)); //search for URL in hashtable, return NULL if not found
+					//STEP 4
+					searchResult = hsearch(hp, fn, URLresult, strlen(URLresult)); //search for URL in hashtable, return NULL if not found
 				
-				if (IsInternalURL(URLresult) && searchResult == NULL) { //check to see if URL is internal
-					printf("Internal url: %s\n", URLresult);
-					hput(hp, URLresult, URLresult, strlen(URLresult)); //add new URL into hashtable (use URL itself as hash key bc key must be a char)
+					if (IsInternalURL(URLresult) && searchResult == NULL) { //check to see if URL is internal
+						printf("Internal url: %s\n", URLresult);
+						hput(hp, URLresult, URLresult, strlen(URLresult)); //add new URL into hashtable (use URL itself as hash key bc key must be a char)
 					
-					//STEP 3
-					intPage = (webpage_new(URLresult, currdepth+1, NULL)); //create new webpage_t for each internal URL, assign correct depth
-					webpage_fetch(intPage); //store HTML into webpage_t as well
-					qput(qp, intPage); //place new webpage_t into queue
-				} 
-				else {	//if URL is external
-					//printf("External url: %s\n", URLresult);
-					free(URLresult);
+						//STEP 3
+						intPage = (webpage_new(URLresult, currdepth+1, NULL)); //create new webpage_t for each internal URL, assign correct depth
+						//webpage_fetch(intPage); //store HTML into webpage_t as well
+						qput(qp, intPage); //place new webpage_t into queue
+					} 
+					else {	//if URL is external
+						//printf("External url: %s\n", URLresult);
+						free(URLresult);
+					}
 				}
 			}
-			if ((page = qget(qp)) == NULL)
-				currdepth = maxdepth + 1;
-			else
-				currdepth = webpage_getDepth(page);
-			printf("next URL: %s\n", webpage_getURL(page));
-			printf("currdepth = %d\n", currdepth);
-			pos = 0;
-		} while (currdepth <= maxdepth); 
-		
-    
-		printf("\n\nStep 3 Verification: \n");
-    	
-		//use qget to remove each webpage_t address from the queue and print each associated URL
-		while((tmpPage = (webpage_t*)qget(qp)) != NULL){ //while queue is not empty
-			printf("%s\n", webpage_getURL(tmpPage));  //print URL
-			printf("HTML Length: %d\n", webpage_getHTMLlen(tmpPage)); //print HTML length
-			webpage_delete((void*)tmpPage); //delete webpage_t referenced by tmpPage address
 		}
-    
-		//DEALLOCATE all memory used
-		qclose(qp); //close queue
-		hclose(hp); //close hashtable
-		webpage_delete((void*)page); //delete original webpage_t
-    
-		exit(EXIT_SUCCESS); 
-	}
-  
-	else exit(EXIT_FAILURE); //EXIT_FAILURE if fetch of seed URL does not succeed
+	} while ((page = qget(qp)) != NULL) ;
+
+	printf("\nTotal: %d web pages stored\n",id-1);
 	
+/* NOT USED FOR STEP 6
+	printf("\n\nStep 3 Verification: \n");
+
+	//use qget to remove each webpage_t address from the queue and print each associated URL
+	while((tmpPage = (webpage_t*)qget(qp)) != NULL){ //while queue is not empty
+		printf("%s\n", webpage_getURL(tmpPage));  //print URL
+		printf("HTML Length: %d\n", webpage_getHTMLlen(tmpPage)); //print HTML length
+		webpage_delete((void*)tmpPage); //delete webpage_t referenced by tmpPage address
+	}
+*/  
+	//DEALLOCATE all memory used
+	qclose(qp); //close queue
+	hclose(hp); //close hashtable
+	webpage_delete((void*)page); //delete original webpage_t
+  
+	exit(EXIT_SUCCESS); 
+  
 }
 
 
