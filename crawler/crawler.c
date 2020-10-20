@@ -117,7 +117,9 @@ int main (int argc, char *argv[]) {
 	hp = hopen(hsize);
 		
 	page = (webpage_new(seedurl, 0, NULL)); //create new webpage_t of depth 0
-	hput(hp, seedurl, seedurl, strlen(seedurl)); // add page to hash table, but not queue
+	URLresult = (char*)malloc(strlen(seedurl)*(sizeof(char)+1));
+	strcpy(URLresult,seedurl);
+	hput(hp,URLresult, URLresult, strlen(URLresult)); // add page to hash table, but not queue
 	
 	do {  // STEP 6: loop through all the pages
 		currdepth = webpage_getDepth(page);
