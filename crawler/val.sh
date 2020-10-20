@@ -4,8 +4,7 @@ make &>> /dev/null
 
 mkdir test_dir
 echo running valgrind...
-valgrind --leak-check=full --show-leak-kinds=all crawler https://thayer.github.io/engs50/ test_dir 0 &> valout.txt
-grep "ERROR SUMMARY\| Command: \| no leaks are possible" valout.txt
+valgrind --leak-check=full --show-leak-kinds=all crawler https://thayer.github.io/engs50/ test_dir 2
 
 rm valout.txt
 echo making clean...
