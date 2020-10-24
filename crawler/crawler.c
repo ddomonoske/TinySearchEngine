@@ -11,14 +11,17 @@
  * 
  */
 
-#include "webpage.h"
-#include "queue.h"
-#include "hash.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
 #include <unistd.h>
 #include <sys/stat.h>
+#include "pageio.h" //do we need any of these?
+#include "webpage.h"
+#include "queue.h"
+#include "hash.h"
+
 
 typedef struct stat stat_t;
 
@@ -40,7 +43,7 @@ bool fn(void* p, const void* keyp) { //requires (void* elementp, const void* key
 /* pagesave saves info about a webpage (pagep) into a file (id) within the specified directory (dirname)
  * within file, writes webpage URL, depth, HTML length, and HTML
  * returns 1 upon completion
- */
+ *
 int32_t pagesave(webpage_t *pagep, int id, char *dirname) {
 	
 	FILE *fp;
@@ -57,7 +60,7 @@ int32_t pagesave(webpage_t *pagep, int id, char *dirname) {
 	fclose(fp);
 	return 0; //will always return 0
 }
-
+*/
 
 /* to check if the directory under string beginning at *dir exists
  * returns true if it does, false if not
@@ -131,7 +134,6 @@ int main (int argc, char *argv[]) {
 			
 			//STEP 5
 			pagesave(page, id++, pagedir);  // STEP 6: save to pagedir
-			printf("Saved: %s\n", webpage_getURL(page));
 
 			if (currdepth < maxdepth) {  // STEP 6: only search page if not at maxdepth
 				pos = 0;
@@ -168,6 +170,9 @@ int main (int argc, char *argv[]) {
 	qclose(qp); //close queue
 	hclose(hp); //close hashtable
 	webpage_delete((void*)page); //delete original webpage_t
+	
+	webpage_t *retrieve = pageload(1,"../pages"); //load first saved webpage
+	pagesave(retrieve,1,"../pages1"); //save it to a different directory
   
 	exit(EXIT_SUCCESS);  
 }
