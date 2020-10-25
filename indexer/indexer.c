@@ -30,7 +30,7 @@ typedef struct counters {
 	uint32_t count;
 } counters_t;
 
-
+/* the representation of a word for the hashtable */
 typedef struct wc {
 	char *word;
 	queue_t *qp;
@@ -93,7 +93,7 @@ wc_t* make_wc(char *word, counters_t *qp) {
 
 
 /* free all the words in the hash table
- *   -used with happly
+ *   --used with happly
  */
 void freeWord(void* elementp) {
 	wc_t *wcp = (wc_t*)elementp;
@@ -101,15 +101,18 @@ void freeWord(void* elementp) {
 	qclose(wcp->qp); //step 4
 }
 
+
 /* add the count of words in each queue element to the sum (should be 141)
- *   -used with qapply for step4
+ *   --used with qapply for step4
  */
 void sumwordsQueue(void* elementp) {
 	counters_t *docp = (counters_t*)elementp;
 	sumGlobal += docp->count;
 }
 
+
 /* call sumwordsQueue for each queue in the hashtable
+ *  --used with happly
  */
 void sumwordsHash(void* elementp) {
 	wc_t *wcp = (wc_t*)elementp;
@@ -184,13 +187,13 @@ int main(void) {
 	
 	
 	//Step 4: Calculate sum of all counts in the hash table and internal queues
-	happly(hp, sumwordsHash);
+	happly(hp, sumwordsHash); //call sumwordsHash for each word in the hashtable
 	printf("*** %d words ***\n", sumGlobal);
 
-	
 	webpage_delete(page);
 	
-	happly(hp, freeWord);
+	
+	happly(hp, freeWord); //Use freeWord function to delete all the word strings in the hashtable
 	hclose(hp);
 	//fclose(fp);
 	
