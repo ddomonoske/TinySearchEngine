@@ -22,6 +22,8 @@
 
 #define HTABLE_SIZE 128
 
+int sumGlobal = 0;
+
 typedef struct wc {
 	char *word;
 	uint32_t count;
@@ -83,20 +85,21 @@ wc_t* make_wc(char *word, uint32_t count) {
 }
 
 
-/* increase the count for an already existing wc_t
- */
-/*void increaseCount(vaid* elementp) {
-	wc_t *wcp = (wc_t*)elementp;
-	(wcp->count)++;
-}*/
-
-
 /* free all the words in the hash table
  *   -used with happly
  */
 void freeWord(void* elementp) {
 	wc_t *wcp = (wc_t*)elementp;
 	free(wcp->word);
+}
+
+
+/* add the count of words in each element to the sum (should be 141)
+ *   -used with happly
+ */
+void sumWords(void* elementp) {
+	wc_t *wcp = (wc_t*)elementp;
+	sumGlobal += wcp->count;
 }
 
 
@@ -126,8 +129,12 @@ int main(void) {
 			//fprintf(fp, "%s\n", word);  // remnant from Step 2
 		}
 		free(word); 
-		
 	}
+	
+	//Calculate sum of all counts in the hash table
+	happly(hp, sumWords);
+	printf("*** %d words ***\n", sumGlobal);
+	
 	
 	webpage_delete(page);
 	
