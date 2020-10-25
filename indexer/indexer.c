@@ -27,6 +27,7 @@ typedef struct wc {
 	uint32_t count;
 } wc_t;
 
+
 /* Determine if a word from a page's html is valid. Also makes all character lowercase
  * Valid is defined as:
  *   - longer than 3 characters
@@ -46,6 +47,7 @@ bool NormalizeWord(char *word) {
 	}
 	return true;
 }
+
 
 /* check if a word matches with a wc_t word
  */
@@ -71,7 +73,7 @@ wc_t* make_wc(char *word, uint32_t count) {
 	}
 
 	wordLength = strlen(word);
-	if ((wcp->word = (char*)malloc(sizeof(char)*wordLength)) == NULL) { 	//check if enough space in memory for wc_t*
+	if ((wcp->word = (char*)malloc((wordLength+1)*sizeof(char))) == NULL) { 	//check if enough space in memory for wc_t*
 		printf("Error: malloc failed allocating word\n");
 		return NULL;
 	}
@@ -80,6 +82,7 @@ wc_t* make_wc(char *word, uint32_t count) {
 	return wcp;
 }
 
+
 /* increase the count for an already existing wc_t
  */
 /*void increaseCount(vaid* elementp) {
@@ -87,11 +90,12 @@ wc_t* make_wc(char *word, uint32_t count) {
 	(wcp->count)++;
 }*/
 
+
 int main(void) {
 	webpage_t *page;
 	char *word;
 	int pos = 0;
-
+	
 	//FILE *fp;
 	hashtable_t *hp = hopen(HTABLE_SIZE);  // Step 3
 	wc_t *wc_found;
@@ -112,12 +116,13 @@ int main(void) {
 			}
 			//fprintf(fp, "%s\n", word);  // remnant from Step 2
 		}
+		free(word); 
 	}
-
+	
+	
 	webpage_delete(page);
 
 	hclose(hp);
-	
 	//fclose(fp);
 	
 	return 0;
