@@ -13,13 +13,19 @@
 #include <string.h>
 #include <stdbool.h>
 #include <ctype.h>
-//#include <unistd.h>
+#include <unistd.h>
 #include <sys/stat.h>
 #include "pageio.h" //do we need any of these?
 #include "webpage.h"
 #include "queue.h"
 #include "hash.h"
 
+#define HTABLE_SIZE 128
+
+typedef struct wc {
+	char *word;
+	uint32_t count;
+} wc_t;
 
 /* Determine if a word from a page's html is valid. Also makes all character lowercase
  * Valid is defined as:
@@ -41,22 +47,78 @@ bool NormalizeWord(char *word) {
 	return true;
 }
 
+/* check if a word matches with a wc_t word
+ */
+bool wordmatch(void* elementp, const void* word) {
+	wc_t *ep = (wc_t*)elementp;
+	char *wp = (char*)word;
+	if (strcmp(ep->word,wp) == 0)  // true if the word is a match
+		return true;
+	else
+		return false;
+}
+
+
+/* make a wc_t object
+ *   - malloc space for object and for word
+ */
+wc_t* make_wc(char *word, uint32_t count) {
+	wc_t *wcp;
+	uint32_t wordLength;
+	if ((wcp = (wc_t*)malloc(sizeof(wc_t))) == NULL) { 	//check if enough space in memory for car_t*
+		printf("Error: malloc failed allocating wc object\n");
+		return NULL;
+	}
+
+	wordLength = strlen(word);
+	if ((wcp->word = (char*)malloc(sizeof(char)*wordLength)) == NULL) { 	//check if enough space in memory for wc_t*
+		printf("Error: malloc failed allocating word\n");
+		return NULL;
+	}
+	strcpy(wcp->word, word);
+	wcp->count = count;
+	return wcp;
+}
+
+/* increase the count for an already existing wc_t
+ */
+/*void increaseCount(vaid* elementp) {
+	wc_t *wcp = (wc_t*)elementp;
+	(wcp->count)++;
+}*/
+
 int main(void) {
 	webpage_t *page;
 	char *word;
 	int pos = 0;
-	FILE *fp;
+
+	//FILE *fp;
+	hashtable_t *hp = hopen(HTABLE_SIZE);  // Step 3
+	wc_t *wc_found;
+
 	page = pageload(1,"../pages");
 
-	chdir("../indexer");
-	fp = fopen("output1","w");
+	//chdir("../indexer");  // for Step 2
+	//fp = fopen("output1","w"); // for Step 2
 		
-	while ((pos = webpage_getNextWord(page, pos, &word)) > 0) { //go through webpage looking for embedded URLs
-		if (NormalizeWord(word) == true)
-			fprintf(fp, "%s\n", word);
+	while ((pos = webpage_getNextWord(page, pos, &word)) > 0) { //go through every word in html
+		if (NormalizeWord(word) == true) {  // only add to hash table if normalized
+			if ((wc_found = hsearch(hp, wordmatch, word, strlen(word))) == NULL) {
+				printf("adding new word to hash table\n");
+				hput(hp, make_wc(word,1), word, strlen(word));
+			} else {
+				printf("increasing the count for '%s' by 1\n", word);
+				(wc_found->count)++;
+			}
+			//fprintf(fp, "%s\n", word);  // remnant from Step 2
+		}
 	}
 
-	fclose(fp);
+	webpage_delete(page);
+
+	hclose(hp);
+	
+	//fclose(fp);
 	
 	return 0;
 }
