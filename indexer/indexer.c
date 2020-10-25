@@ -91,6 +91,15 @@ wc_t* make_wc(char *word, uint32_t count) {
 }*/
 
 
+/* free all the words in the hash table
+ *   -used with happly
+ */
+void freeWord(void* elementp) {
+	wc_t *wcp = (wc_t*)elementp;
+	free(wcp->word);
+}
+
+
 int main(void) {
 	webpage_t *page;
 	char *word;
@@ -117,11 +126,12 @@ int main(void) {
 			//fprintf(fp, "%s\n", word);  // remnant from Step 2
 		}
 		free(word); 
+		
 	}
 	
-	
 	webpage_delete(page);
-
+	
+	happly(hp, freeWord);
 	hclose(hp);
 	//fclose(fp);
 	
