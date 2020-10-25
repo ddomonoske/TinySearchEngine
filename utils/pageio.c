@@ -28,11 +28,11 @@ int32_t pagesave(webpage_t *pagep, int id, char *dirname) {
 
 	sprintf(filename, "%d", id); //convert int to string
 	
-	//chdir("..");  // removed because I believe the ../ should be included in the directory name
 	chdir(dirname); //changes over to right directory
 	
 	fp = fopen (filename,"w");
-	fprintf(fp,"%s\n%d\n%d\n%s\n", webpage_getURL(pagep), webpage_getDepth(pagep), webpage_getHTMLlen(pagep), webpage_getHTML(pagep)); //prints URL, depth, HTML length, and HTML into file
+	fprintf(fp,"%s\n%d\n%d\n%s\n", webpage_getURL(pagep), webpage_getDepth(pagep),
+					webpage_getHTMLlen(pagep), webpage_getHTML(pagep)); //prints URL, depth, HTML length, and HTML into file
 	printf("pagesave: %s\n", webpage_getURL(pagep));
 
 	fclose(fp);
@@ -62,7 +62,8 @@ webpage_t *pageload(int id, char *dirnm) {
 	fscanf(fp, "%s %s", urlstr, depthstr); //stores URL and depth info
 	printf("URL is %s \n Depth is %s\n", urlstr, depthstr);
 	depth = atoi(depthstr);
-
+	fclose(fp);
+	
 	page = (webpage_new(urlstr, depth, NULL)); //create new webpage_t
 	printf("pageload: %s\n", webpage_getURL(page));
 

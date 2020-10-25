@@ -4,7 +4,7 @@ make &>> /dev/null
 
 mkdir test_dir
 echo running valgrind...
-valgrind --leak-check=full --show-leak-kinds=all crawler https://thayer.github.io/engs50/ test_dir 1
+valgrind --leak-check=full --show-leak-kinds=all crawler https://thayer.github.io/engs50/ ../pages 1
 
 echo making clean...
 make clean &>> /dev/null

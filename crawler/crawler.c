@@ -173,6 +173,7 @@ int main (int argc, char *argv[]) {
 	
 	webpage_t *retrieve = pageload(1,"../pages"); //load first saved webpage
 	pagesave(retrieve,1,"../pages1"); //save it to a different directory
-  
+	webpage_delete((void*)retrieve);
+	
 	exit(EXIT_SUCCESS);  
 }
