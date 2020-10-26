@@ -141,56 +141,78 @@ bool QueueSearchFn(void* elementp, const void* docID) { //requires (void* elemen
 }
 
 
-int main(void) {
+int main(int argc, char *argv[] ) {
 	webpage_t *page;
 	char *word;
-	int pos = 0;
-	int id = 1;
+	int pos, id, i;
 	
 	//FILE *fp;
-	hashtable_t *hp = hopen(HTABLE_SIZE);  // Step 3
+	hashtable_t *hp = hopen(HTABLE_SIZE);  
 	wc_t *wc_found;
+	
 	queue_t *qp;
 	counters_t *doc_found;
 
-	page = pageload(id,"../pages");
+	//Check that their are the write number of arguments
+	if (argc!=2) {
+        printf("usage: indexer <id>/n");
+        exit(EXIT_FAILURE);
+    }
 
+    id = strtod(argv[1], argv); //get input argument from user
+    if (id < 1){
+        printf("usage: indexer <id>/n");
+        exit(EXIT_FAILURE);
+    }
+    
+    /*
+    page 1 = 141 words
+    page 2 = 73 words
+    page 3 = 109 words
+    page 4 = 365 words
+	*/
+	
 	//chdir("../indexer");  // for Step 2
 	//fp = fopen("output1","w"); // for Step 2
+	
+	
+	for (i=1; i<=id; i++){
 		
-	while ((pos = webpage_getNextWord(page, pos, &word)) > 0) { //go through every word in html
-		if (NormalizeWord(word)) {  // only add to hash table if normalized
-			if ((wc_found = hsearch(hp, wordmatch, word, strlen(word))) == NULL) {
-				printf("adding new word to hash table\n");
-				qp = qopen(); //make new queue
-				qput(qp, make_doc(id,1)); //place doc element in queue
-				hput(hp, make_wc(word, qp), word, strlen(word)); //put queue in word element in hashtable
+		page = pageload(i ,"../pages");
+		pos = 0;
+		
+		while ((pos = webpage_getNextWord(page, pos, &word)) > 0) { //go through every word in html
+			if (NormalizeWord(word)) {  // only add to hash table if normalized
+				if ((wc_found = hsearch(hp, wordmatch, word, strlen(word))) == NULL) { //if word not found in hash table
+					printf("adding new word to hash table\n");
+					qp = qopen(); //make new queue
+					qput(qp, make_doc(id,1)); //place doc element in queue
+					hput(hp, make_wc(word, qp), word, strlen(word)); //put queue in hash table
 				
-			} else {
-				printf("increasing the count for '%s' by 1\n", word);
+				} else { //if word is in hash table
+					printf("increasing the count for '%s' by 1\n", word);
 				
-				//look for element in queue with matching doc ID
-				doc_found = qsearch(wc_found->qp, QueueSearchFn, &id); 
-				if((doc_found) != NULL){
-					(doc_found->count)++; //add to count inside doc element in queue		
-				}	
-				else { //if no element in the queue, make a new doc element
-					qp = qopen();
-					qput(qp, make_doc(id,1));  //place doc in queue
-					hput(hp, make_wc(word, qp), word, strlen(word)); //place queue in hashtable
+					//look for element in queue with matching doc ID
+					doc_found = qsearch(wc_found->qp, QueueSearchFn, &id); 
+					if((doc_found) != NULL){ //if doc element is in queue
+						(doc_found->count)++; //add to count inside doc element in queue		
+					}	
+					else { //if no doc element in the queue, make one
+						qput(wc_found->qp, make_doc(id,1));  //place new doc in queue
+					}
 				}
+				//fprintf(fp, "%s\n", word);  // remnant from Step 2
 			}
-			//fprintf(fp, "%s\n", word);  // remnant from Step 2
+			free(word); 
 		}
-		free(word); 
+		webpage_delete(page); 
 	}
 	
-	
-	//Step 4: Calculate sum of all counts in the hash table and internal queues
+	//Calculate sum of all counts in the hash table and internal queues
 	happly(hp, sumwordsHash); //call sumwordsHash for each word in the hashtable
-	printf("*** %d words ***\n", sumGlobal);
 
-	webpage_delete(page);
+
+	printf("*** %d words ***\n", sumGlobal);
 	
 	
 	happly(hp, freeWord); //Use freeWord function to delete all the word strings in the hashtable
