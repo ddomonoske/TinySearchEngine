@@ -15,27 +15,17 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <sys/stat.h>
-#include "pageio.h" //do we need any of these?
+#include "pageio.h" 
 #include "webpage.h"
 #include "queue.h"
 #include "hash.h"
+#include "indexio.h"
 
 #define HTABLE_SIZE 128
 
-int sumGlobal = 0;
+static int sumGlobal = 0;
 
-/* the representation of a doc for the queue (step 4) */
-typedef struct counters {
-	int id;
-	uint32_t count;
-} counters_t;
-
-/* the representation of a word for the hashtable */
-typedef struct wc {
-	char *word;
-	queue_t *qp;
-} wc_t;
-
+//structures defined in indexio.h
 
 /* Determine if a word from a page's html is valid. Also makes all character lowercase
  * Valid is defined as:
@@ -145,25 +135,24 @@ int main(int argc, char *argv[] ) {
 	webpage_t *page;
 	char *word;
 	int pos, id, i;
-	
-	//FILE *fp;
-	hashtable_t *hp = hopen(HTABLE_SIZE);  
-	wc_t *wc_found;
-	
-	queue_t *qp;
-	counters_t *doc_found;
 
 	//Check that their are the write number of arguments
 	if (argc!=2) {
-        printf("usage: indexer <id>/n");
+        printf("usage: indexer <id>\n");
         exit(EXIT_FAILURE);
     }
 
     id = strtod(argv[1], argv); //get input argument from user
     if (id < 1){
-        printf("usage: indexer <id>/n");
+        printf("usage: indexer <id>\n");
         exit(EXIT_FAILURE);
     }
+    
+	hashtable_t *hp = hopen(HTABLE_SIZE);  //only open after args are valid
+	wc_t *wc_found;
+	
+	queue_t *qp;
+	counters_t *doc_found;
     
     /*
     page 1 = 141 words
@@ -190,7 +179,7 @@ int main(int argc, char *argv[] ) {
 					hput(hp, make_wc(word, qp), word, strlen(word)); //put queue in hash table
 				
 				} else { //if word is in hash table
-					printf("increasing the count for '%s' by 1\n", word);
+					printf("increasing the count for '%s' by 1 for doc %d\n", word, i);
 				
 					//look for element in queue with matching doc ID
 					doc_found = qsearch(wc_found->qp, QueueSearchFn, &id); 
@@ -211,13 +200,15 @@ int main(int argc, char *argv[] ) {
 	//Calculate sum of all counts in the hash table and internal queues
 	happly(hp, sumwordsHash); //call sumwordsHash for each word in the hashtable
 
-
 	printf("*** %d words ***\n", sumGlobal);
 	
+	indexsave(hp,"indexName"); //only need hash table and name to create index file
 	
 	happly(hp, freeWord); //Use freeWord function to delete all the word strings in the hashtable
 	hclose(hp);
 	//fclose(fp);
+	
+	
 	
 	return 0;
 }

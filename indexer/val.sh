@@ -4,7 +4,7 @@ make &>> /dev/null
 
 mkdir test_dir
 echo running valgrind...
-valgrind --leak-check=full --show-leak-kinds=all indexer
+valgrind --leak-check=full --show-leak-kinds=all indexer 1
 
 echo making clean...
 make clean &>> /dev/null

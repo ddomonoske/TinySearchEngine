@@ -1,7 +1,7 @@
-# Not ignore: .c, .h, Makefile
+# Not ignore: .c, .h, .a, Makefile
+
 # Object files and libraries
 *.o
-*.a
 
 # Emacs Save Files
 *~
