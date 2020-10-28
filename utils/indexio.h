@@ -60,4 +60,4 @@ void indexsave(hashtable_t *hp, char *indexnm);
 /* 
  * indexload
  */
-//webpage_t *indexload(int id, char *dirnm);
+hashtable_t* indexload(char *filename);

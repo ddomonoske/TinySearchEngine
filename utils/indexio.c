@@ -10,6 +10,8 @@
 
 #include "indexio.h"
 
+#define MAX_WORD_LENGTH 50
+
 static FILE *fp;
 
 
@@ -114,8 +116,15 @@ void indexsave(hashtable_t *hp, char *indexnm) {
  */ 
 hashtable_t* indexload(char *filename) {
 	hashtable_t *hp;
-	FILE *fp;
+	char *word;      // word for word counter
+	queue_t *qp;     // queue for word counter
+	int id, count;   // doc id and count for queue
 
+	int i;       // track whether current doc is first doc for each word
+	int status;  // store return value of fscanf()
+	
+	FILE *fp;
+	
 	if (filename == NULL) {
 		printf("Error: filename is NULL.\n");
 		return NULL;
@@ -123,17 +132,25 @@ hashtable_t* indexload(char *filename) {
 
 	fp = fopen(filename, "r");
 	hp = hopen(HTABLE_SIZE);
+	word = (char*)malloc(sizeof(char)*(MAX_WORD_LENGTH+1));
 
-/*
-  while (  scan line == success ) {
-		// add word to hash table
-		while ( scan doc and count == success ) {
-			// add doc and count to queue
+	do {
+		fscanf(fp, "%50s", word);  // get word, no longer than 50 characters
+		i = 0;
+		
+		// loop until end of line. EOF determined by failing to match two integers
+		while ((status = fscanf(fp, "%d %d", &id, &count)) == 2) {
+			if (i==0) {  // if first id and count for word
+				qp = qopen();   // qp is new object if new word, otherwise it stays the same
+				hput(hp, make_wc(word, qp), word, strlen(word));  // place new wc_t in table
+			}
+			qput(qp, make_doc(id,count));  // add new doc to queue
+			i++;
 		}
-	}
-*/
-
+	} while (status != EOF);
+	
 	fclose(fp);
-
+	free(word);
+	
 	return(hp);
 }
