@@ -16,6 +16,7 @@
 #include "queue.h"
 #include "hash.h"
 
+#define HTABLE_SIZE 128
 
 /* object stored in queue that hold doc id and wc within that doc */
 typedef struct counters {
