@@ -10,7 +10,6 @@
 
 #include "indexio.h"
 
-
 static FILE *fp;
 
 
@@ -24,8 +23,8 @@ static void saveCount(void *elementp) {
 		fprintf(fp," %d %d",doc->id, doc->count);
 	}
 	else printf("counter_t in queue is null");
-
 }
+
 
 /*
  * saveLine
@@ -39,8 +38,7 @@ static void saveLine(void *elementp) {
 		qapply(uniqueword->qp,saveCount);	
 		fprintf(fp,"\n");
 	}
-	else printf("File is NULL or wc_t in hashtable is null");
-	
+	else printf("File is NULL or wc_t in hashtable is null");	
 }
 
 
@@ -60,19 +58,35 @@ void indexsave(hashtable_t *hp, char *indexnm) {
 		happly(hp,saveLine); //happly a function that will print line for each unique word in hp into file
 		fclose(fp);
 	}
-
 }
 
 
 
 /* 
  * indexload 
- */
- 
-void indexload(char *filename, char *dirnm);
+ */ 
+hashtable_t* indexload(char *filename) {
+	hashtable_t *hp;
+	FILE *fp;
 
+	if (filename == NULL) {
+		printf("Error: filename is NULL.\n");
+		return NULL;
+	}
 
+	fp = fopen(filename, "r");
+	hp = hopen(HTABLE_SIZE);
 
+/*
+  while (  scan line == success ) {
+		// add word to hash table
+		while ( scan doc and count == success ) {
+			// add doc and count to queue
+		}
+	}
+*/
 
+	fclose(fp);
 
-
+	return(hp);
+}
