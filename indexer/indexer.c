@@ -132,7 +132,7 @@ bool QueueSearchFn(void* elementp, const void* docID) { //requires (void* elemen
 int main(int argc, char *argv[] ) {
 	webpage_t *page;
 	char *word;
-	int pos, id, i;
+	int pos, idmax, id;
 
 	hashtable_t *hp;
 	wc_t *wc_found;
@@ -146,8 +146,8 @@ int main(int argc, char *argv[] ) {
 		exit(EXIT_FAILURE);
 	}
 	
-	id = strtod(argv[1], argv); //get input argument from user
-	if (id < 1){
+	idmax = strtod(argv[1], argv); //get input argument from user
+	if (idmax < 1){
 		printf("usage: indexer <id>\n");
 		exit(EXIT_FAILURE);
 	}
@@ -164,9 +164,9 @@ int main(int argc, char *argv[] ) {
 	
 	hp = hopen(HTABLE_SIZE);  //only open after args are valid
 	
-	for (i=1; i<=id; i++){
+	for (id=1; id<=idmax; id++){
 		
-		page = pageload(i ,"../pages");
+		page = pageload(id ,"../pages");
 		pos = 0;
 		
 		while ((pos = webpage_getNextWord(page, pos, &word)) > 0) { //go through every word in html
@@ -178,7 +178,7 @@ int main(int argc, char *argv[] ) {
 					hput(hp, make_wc(word, qp), word, strlen(word)); //put queue in hash table
 					
 				} else { //if word is in hash table
-					printf("increasing the count for '%s' by 1 for doc %d\n", word, i);
+					printf("increasing the count for '%s' by 1 for doc %d\n", word, id);
 					
 					//look for element in queue with matching doc ID
 					doc_found = qsearch(wc_found->qp, QueueSearchFn, &id); 
