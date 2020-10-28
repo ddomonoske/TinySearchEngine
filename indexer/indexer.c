@@ -58,38 +58,6 @@ bool wordmatch(void* elementp, const void* word) {
 }
 
 
-/* make a wc_t object
- *   - malloc space for object and for word
- */
-wc_t* make_wc(char *word, counters_t *qp) {
-	wc_t *wcp;
-	uint32_t wordLength;
-	if ((wcp = (wc_t*)malloc(sizeof(wc_t))) == NULL) { 	//check if enough space in memory for car_t*
-		printf("Error: malloc failed allocating wc object\n");
-		return NULL;
-	}
-
-	wordLength = strlen(word);
-	if ((wcp->word = (char*)malloc((wordLength+1)*sizeof(char))) == NULL) { 	//check if enough space in memory for wc_t*
-		printf("Error: malloc failed allocating word\n");
-		return NULL;
-	}
-	strcpy(wcp->word, word);
-	wcp->qp = qp;
-	return wcp;
-}
-
-
-/* free all the words in the hash table
- *   --used with happly
- */
-void freeWord(void* elementp) {
-	wc_t *wcp = (wc_t*)elementp;
-	free(wcp->word);
-	qclose(wcp->qp); //step 4
-}
-
-
 /* add the count of words in each queue element to the sum (should be 141)
  *   --used with qapply for step4
  */
@@ -107,18 +75,6 @@ void sumwordsHash(void* elementp) {
 	qapply(wcp->qp, sumwordsQueue);
 }
 
-
-/* make_doc(): creates a doc object for queue(step 4) */
-counters_t* make_doc(int id, uint32_t count) {
-	counters_t *doc;
-	if ((doc = (counters_t*)malloc(sizeof(counters_t))) == NULL) { //check if enough space in memory for counters_t*
-		printf("Error: malloc failed allocating car\n");
-		return NULL;
-	}
-	doc->id = id;
-	doc->count = count;
-	return doc;
-}
 
 /* look in queue for element with matching doc ID
  */

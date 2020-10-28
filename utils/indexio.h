@@ -30,6 +30,27 @@ typedef struct wc {
 	queue_t *qp;
 } wc_t;
 
+/*
+ * make a wc_t object
+ *   - malloc space for object and for word
+ *   - used to make a wordcount to place into a hash table
+ */
+wc_t* make_wc(char *word, counters_t *qp);
+
+
+/*
+ * make a counters_t object
+ *   - malloc space for doc
+ *   - used to make a document count to place into a queue
+ */
+counters_t* make_doc(int id, uint32_t count);
+
+
+/*
+ * free all wc_t objects in hash table before calling hclose()
+ */
+void freeWord(void* elementp);
+
 
 /*
  * indexsave
