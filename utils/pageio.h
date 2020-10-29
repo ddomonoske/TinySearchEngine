@@ -15,8 +15,21 @@
 #include <stdlib.h>
 #include <string.h>
 #include <inttypes.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <webpage.h>
+
+#define MAX_PATH_LENGTH 1024
+
+typedef struct stat stat_t;
+
+
+/* 
+ * to check if the directory under string beginning at *dir exists
+ * returns true if it does, false if not
+ * used for STEP 6
+ */
+bool isDirExist(char *dir);
 
 /*
  * pagesave -- save the page in filename id in directory dirnm

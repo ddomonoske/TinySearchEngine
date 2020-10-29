@@ -10,6 +10,25 @@
 #include "pageio.h"
 
 
+/* to check if the directory under string beginning at *dir exists
+ * returns true if it does, false if not
+ * used for STEP 6
+ */
+bool isDirExist(char *dir) {
+	stat_t s;
+	bool b;
+	if(!stat(dir,&s)) {
+		if (S_ISDIR(s.st_mode))
+			b =  true;
+		else
+			b = false;
+	} else
+		b = false;
+
+	return b;
+}
+
+
  /*
  * pagesave -- save the webpage in filename id in directory dirname
  *
@@ -41,7 +60,7 @@ int32_t pagesave(webpage_t *pagep, int id, char *dirname) {
 
 
 /* 
- * pageload -- loads the numbered filename <id> in direcory <dirnm>
+ * pageload -- loads the numbered filename <id> in directory <dirnm>
  * into a new webpage
  *
  * returns: non-NULL for success; NULL otherwise
@@ -54,13 +73,15 @@ webpage_t *pageload(int id, char *dirnm) {
 	char urlstr[100];
 	char depthstr[10];
 	int depth;
-	
+	char cwd[MAX_PATH_LENGTH];
+
+	getcwd(cwd, sizeof(cwd));
 	chdir(dirnm); //changes over to right directory
 	sprintf(filename, "%d", id); //convert int to string
 	
 	fp = fopen(filename,"r"); 
 	fscanf(fp, "%s %s", urlstr, depthstr); //stores URL and depth info
-	printf("URL is %s \n Depth is %s\n", urlstr, depthstr);
+	//printf("URL is %s \n Depth is %s\n", urlstr, depthstr);
 	depth = atoi(depthstr);
 	fclose(fp);
 	
@@ -71,15 +92,6 @@ webpage_t *pageload(int id, char *dirnm) {
 		return page;
 	}
 	else return NULL; //if webpage_fetch fails
-	
+
+	chdir(cwd);  // return to the original cwd
 }
-
-
-
-
-
-
-
-
-
-
