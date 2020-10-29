@@ -101,7 +101,7 @@ void indexsave(hashtable_t *hp, char *indexnm) {
 		printf("hashtable is empty or indexnm is NULL");
 	}
 	else {
-		chdir("../indexer");  // move from crawler directory into indexer directory
+		//chdir("../indexer");  // move from crawler directory into indexer directory
 		fp = fopen(indexnm,"w"); 
 
 		happly(hp,saveLine); //happly a function that will print line for each unique word in hp into file
@@ -131,6 +131,11 @@ hashtable_t* indexload(char *filename) {
 	}
 
 	fp = fopen(filename, "r");
+	if (fp == NULL) {
+		printf("Error: file does not exist\n");
+		return NULL;
+	}
+	
 	hp = hopen(HTABLE_SIZE);
 	word = (char*)malloc(sizeof(char)*(MAX_WORD_LENGTH+1));
 
