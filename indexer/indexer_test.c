@@ -24,22 +24,15 @@
 int main(int argc, char *argv[] ) {
 	hashtable_t *hp;
 
-/*	
 	//Check that their are the write number of arguments
-	if (argc!=2) {
-		printf("usage: indexer <id>\n");
+	if (argc!=3) {
+		printf("USAGE: indexer_test <loadFile> <saveFile>\n");
 		exit(EXIT_FAILURE);
 	}
 	
-	idmax = strtod(argv[1], argv); //get input argument from user
-	if (idmax < 1){
-		printf("usage: indexer <id>\n");
-		exit(EXIT_FAILURE);
-	}
-*/  
-	hp = indexload("indexName");
+	hp = indexload(argv[1]);
 	
-	indexsave(hp,"indexName2"); //only need hash table and name to create index file
+	indexsave(hp, argv[2]); //only need hash table and name to create index file
 	
 	happly(hp, freeWord); //Use freeWord function to delete all the word strings in the hashtable
 	hclose(hp);
