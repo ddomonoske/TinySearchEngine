@@ -71,8 +71,9 @@ void sumwordsQueue(void* elementp) {
  *  --used with happly
  */
 void sumwordsHash(void* elementp) {
-	wc_t *wcp = (wc_t*)elementp;
-	qapply(wcp->qp, sumwordsQueue);
+	//wc_t *wcp = (wc_t*)elementp;
+	//qapply(wcp->qp, sumwordsQueue);
+	sumGlobal++;
 }
 
 
