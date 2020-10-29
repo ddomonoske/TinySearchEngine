@@ -15,7 +15,7 @@
 #include <ctype.h>
 #include <unistd.h>
 #include <sys/stat.h>
-#include "pageio.h" 
+#include "pageio.h"
 #include "webpage.h"
 #include "queue.h"
 #include "hash.h"
@@ -85,10 +85,21 @@ bool QueueSearchFn(void* elementp, const void* docID) { //requires (void* elemen
 }
 
 
+/* used to make the incrementing file names
+ */
+char* itoa(char *a, int i) {
+	sprintf(a, "%d", i);
+	return a;
+}
+
+
 int main(int argc, char *argv[] ) {
+	char *pagedir, *indexnm;
+	char doc_id[10], cwd[MAX_PATH_LENGTH];
+
 	webpage_t *page;
 	char *word;
-	int pos, idmax, id;
+	int pos, id=0;
 
 	hashtable_t *hp;
 	wc_t *wc_found;
@@ -96,18 +107,20 @@ int main(int argc, char *argv[] ) {
 	queue_t *qp;
 	counters_t *doc_found;
 
-	//Check that their are the write number of arguments
-	if (argc!=2) {
-		printf("usage: indexer <id>\n");
+	// Check that there are correct number of arguments
+	if (argc!=3) {
+		printf("USAGE: indexer <pagedir> <indexnm>\n");
 		exit(EXIT_FAILURE);
 	}
-	
-	idmax = strtod(argv[1], argv); //get input argument from user
-	if (idmax < 1){
-		printf("usage: indexer <id>\n");
+	pagedir = argv[1];
+	if ( ! isDirExist(argv[1]) ) {
+		printf("The directory '%s' does not exist.\n", argv[1]);
 		exit(EXIT_FAILURE);
 	}
-  
+	getcwd(cwd, sizeof(cwd));
+	chdir(pagedir);
+	indexnm = argv[2];
+
 	/*
     page 1 = 141 words
     page 2 = 73 words
@@ -119,22 +132,21 @@ int main(int argc, char *argv[] ) {
 	//fp = fopen("output1","w"); // for Step 2
 	
 	hp = hopen(HTABLE_SIZE);  //only open after args are valid
-	
-	for (id=1; id<=idmax; id++){
-		
-		page = pageload(id ,"../pages");
+
+	while ( access(itoa(doc_id, ++id), F_OK) != -1 ) {
+		page = pageload(id ,pagedir);
 		pos = 0;
 		
 		while ((pos = webpage_getNextWord(page, pos, &word)) > 0) { //go through every word in html
 			if (NormalizeWord(word)) {  // only add to hash table if normalized
 				if ((wc_found = hsearch(hp, wordmatch, word, strlen(word))) == NULL) { //if word not found in hash table
-					printf("adding '%s' to hash table\n", word);
+					//printf("adding '%s' to hash table\n", word);
 					qp = qopen(); //make new queue
 					qput(qp, make_doc(id,1)); //place doc element in queue
 					hput(hp, make_wc(word, qp), word, strlen(word)); //put queue in hash table
 					
 				} else { //if word is in hash table
-					printf("increasing the count for '%s' by 1 for doc %d\n", word, id);
+					//printf("increasing the count for '%s' by 1 for doc %d\n", word, id);
 					
 					//look for element in queue with matching doc ID
 					doc_found = qsearch(wc_found->qp, QueueSearchFn, &id); 
@@ -152,16 +164,17 @@ int main(int argc, char *argv[] ) {
 		webpage_delete(page); 
 	}
 	
+	chdir(cwd);
+	
 	//Calculate sum of all counts in the hash table and internal queues
 	happly(hp, sumwordsHash); //call sumwordsHash for each word in the hashtable
 	
 	printf("*** %d words ***\n", sumGlobal);
 	
-	indexsave(hp,"indexName"); //only need hash table and name to create index file
+	indexsave(hp,indexnm); //only need hash table and name to create index file
 	
 	happly(hp, freeWord); //Use freeWord function to delete all the word strings in the hashtable
 	hclose(hp);
-	//fclose(fp);	
 	
 	exit(EXIT_SUCCESS);
 }
