@@ -402,4 +402,3 @@ gcc -Wall -pedantic -std=c11 -ggdb -DAPPTEST  -I../libcs50 -I../common crawler.o
   </body>
 
 </html>
-

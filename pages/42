@@ -28,4 +28,3 @@ clean:
 	rm -f $(PROG)
 	rm -f *~ *.o
 	rm -rf *.dSYM
-
