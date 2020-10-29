@@ -23,8 +23,6 @@
 #include "hash.h"
 
 
-typedef struct stat stat_t;
-
 /* fn() checks if the car_t pointer matches with the provided key
  * returns bool
  */
@@ -38,46 +36,6 @@ bool fn(void* p, const void* keyp) { //requires (void* elementp, const void* key
 		return true;
 	else
 		return false;
-}
-
-/* pagesave saves info about a webpage (pagep) into a file (id) within the specified directory (dirname)
- * within file, writes webpage URL, depth, HTML length, and HTML
- * returns 1 upon completion
- *
-int32_t pagesave(webpage_t *pagep, int id, char *dirname) {
-	
-	FILE *fp;
-	char filename[10];
-
-	sprintf(filename, "%d", id); //convert int to string
-	
-	//chdir("..");  // removed because I believe the ../ should be included in the directory name
-	chdir(dirname); //changes over to right directory
-	
-	fp = fopen (filename,"w");
-	fprintf(fp,"URL: %s\nDepth: %d\nHTML Length: %d\nHTML: %s\n", webpage_getURL(pagep), webpage_getDepth(pagep), webpage_getHTMLlen(pagep), webpage_getHTML(pagep)); //prints URL, depth, HTML length, and HTML into file
-	
-	fclose(fp);
-	return 0; //will always return 0
-}
-*/
-
-/* to check if the directory under string beginning at *dir exists
- * returns true if it does, false if not
- * used for STEP 6
- */
-bool isDirExist(char *dir) {
-	stat_t s;
-	bool b;
-	if(!stat(dir,&s)) {
-		if (S_ISDIR(s.st_mode))
-			b =  true;
-		else
-			b = false;
-	} else
-		b = false;
-
-	return b;
 }
 
 
