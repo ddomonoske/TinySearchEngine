@@ -28,69 +28,56 @@
 bool NormalizeWord(char *word) {
 
 	int i, n = strlen(word);
+	char c;
 	
 	for (i=0; i<n; i++) {
-		if (isalpha(word[i]) == 0) { //returns false if non-alphabetic characters
-			printf("returning false\n");
+		c = word[i];
+		if ((isalpha(c) == 0) && (isspace(c) == 0)){ //returns false if non-alphabetic character AND not white space
+			//printf("returning false\n");
 			return false;
 		}
-		word[i] = tolower(word[i]); //converts all alphabetic characters to lowercase
+		word[i] = tolower(c); //converts all alphabetic characters to lowercase
 	}
+	//printf("returning true\n"); 
 	return true;
-	printf("returning true\n");
-
 }
+
 
 
 int main (void) {
 
 	char input[200]; //to store unparsed user input
-	char *words[10]; //array of words to store input (max input = 10 words)
-	char *token;
+	char *words[10]; //array to store input (max input = 10 words)
 	
 	char delimits[] = " \t"; //set delimiters as space and tab
-	int i = 0;
+	int i,j; //to store and print words from words array
 	
 	printf(">");	
 
-	//note: use fgets, not scanf, in order to read entire line. 
+	//note: use fgets, not scanf, in order to read entire line 
 	while (fgets(input, MAX, stdin) != NULL) { //loops until user enters EOF (ctrl+d)
 	
-		printf("The input is: %s\n",input);
- 		token = strtok(input,delimits); //strtok() splits input according to delimits and returns next token
- 		
- 		//if (NormalizeWord(token)) { //STILL NEED TO CHECK THAT QUERY WORDS CONTAIN NO NON-ALPHA CHARACTERS
- 			words[i] = token;
- 		//}
+		if (NormalizeWord(input)) { //input can only contain alphabetic-characters and white space
+    		
+    		i=0; //rewrite words array for each new input 
+    		words[i] = strtok(input,delimits); //strtok() splits input according to delimits and returns next token
   
-    	while (words[i] != NULL) { //continue splitting input until strktok returns NULL (no more tokens)
-    		printf("%s ",words[i]);
-    		i++;
-    		words[i] = strtok(NULL,delimits); //stores all words into words array
-    	}
-		
-		//else {
-		//	printf("[invalid query]\n"); //reject queries containing non-alphabetic characters. Nothing stored
-		//}
-		
-    	printf(">");
-    } 
+    		while (words[i] != NULL) { //stores all input words into words array
+    			//printf("%s ",words[i]); 
+    			i++;
+    			words[i] = strtok(NULL,delimits); //continue splitting input until strktok returns NULL (no more tokens)
+    		}	
+		} 
+		else printf("[invalid query]\n"); //reject queries containing non-alphabetic/non-whitespace characters
 
-
-	
-	/*	
-	if (NormalizeWord(input)) {
-		printf("converted to lower\n");
-		printf("%s\n",input);	
-	}
-	
-	else {
+		for(j = 0; j<i; j++) { //print words in words array
+		   	printf("%s ", words[j]);
+		}
 		
-		printf("%s\n",input);
-		printf("[invalid query]\n");
-	}
-	*/
-	
+		printf(">");
+    }
+
+	printf("\n"); //add new line after user terminates with ctrl+d
 	return(0);
 
 }
