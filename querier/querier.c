@@ -113,9 +113,11 @@ int main (void) {
 				}
 			}
 			
-			printf("-- %d\n",min);
-			min = 10000;
-			minCount = 10001;
+			if (min != 10000){
+				printf("-- %d\n",min);
+				min = 10000;
+				minCount = 10001;
+			}
 
 		} // end of valid query search
 		else printf("[invalid query]"); //reject queries containing non-alphabetic/non-whitespace characters
