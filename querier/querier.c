@@ -52,33 +52,33 @@ int main (void) {
 	char delimits[] = " \t"; //set delimiters as space and tab
 	int i,j; //to store and print words from words array
 	
-	printf(">");	
+	printf(" > ");	
 
 	//note: use fgets, not scanf, in order to read entire line 
 	while (fgets(input, MAX, stdin) != NULL) { //loops until user enters EOF (ctrl+d)
 	
 		if (NormalizeWord(input)) { //input can only contain alphabetic-characters and white space
     		
-    		i=0; //rewrite words array for each new input 
-    		words[i] = strtok(input,delimits); //strtok() splits input according to delimits and returns next token
-  
-    		while (words[i] != NULL) { //stores all input words into words array
-    			//printf("%s ",words[i]); 
-    			i++;
-    			words[i] = strtok(NULL,delimits); //continue splitting input until strktok returns NULL (no more tokens)
-    		}	
-		} 
-		else printf("[invalid query]\n"); //reject queries containing non-alphabetic/non-whitespace characters
-
-		for(j = 0; j<i; j++) { //print words in words array
-		   	printf("%s ", words[j]);
+			i=0; //rewrite words array for each new input 
+			words[i] = strtok(input,delimits); //strtok() splits input according to delimits and returns next token
+			
+			while (words[i] != NULL) { //stores all input words into words array
+				//printf("%s ",words[i]); 
+				i++;
+				words[i] = strtok(NULL,delimits); //continue splitting input until strktok returns NULL (no more tokens)
+			}
+			
+			for(j = 0; j<i; j++) { //print words in words array
+				printf("%s ", words[j]);
+			}
 		}
+		else printf("[invalid query]\n "); //reject queries containing non-alphabetic/non-whitespace characters
 		
-		printf(">");
-    }
-
+		printf("> ");
+	}
+	
 	printf("\n"); //add new line after user terminates with ctrl+d
 	return(0);
-
+	
 }
 
