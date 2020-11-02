@@ -49,7 +49,7 @@ int main (void) {
 	char input[200]; //to store unparsed user input
 	char *words[10]; //array to store input (max input = 10 words)
 	
-	char delimits[] = " \t"; //set delimiters as space and tab
+	char delimits[] = " \t\n"; //set delimiters as space and tab
 	int i,j; //to store and print words from words array
 	
 	printf(" > ");	
@@ -72,9 +72,9 @@ int main (void) {
 				printf("%s ", words[j]);
 			}
 		}
-		else printf("[invalid query]\n "); //reject queries containing non-alphabetic/non-whitespace characters
+		else printf("[invalid query]"); //reject queries containing non-alphabetic/non-whitespace characters
 		
-		printf("> ");
+		printf("\n > ");
 	}
 	
 	printf("\n"); //add new line after user terminates with ctrl+d
