@@ -50,11 +50,14 @@ int main (void) {
 	char *words[10]; //array to store input (max input = 10 words)
 	
 	char delimits[] = " \t\n"; //set delimiters as space and tab
-	char unique[51]; // unique word from index file
-	int i,j,wc; //to store and print words from words array
-	int id,count,min,status;
+	int j,wc; //to store and print words from words array
 	
 	FILE *fp;
+	char unique[51]; // to store each unique word from index file we read
+	int i,id,count,min,status; //variables for Step 2
+	int uniqFlag = 0;
+	int minCount = 1001;
+	min = 1000;
 	
 	printf(" > ");	
 
@@ -77,33 +80,32 @@ int main (void) {
 			}
 			printf("\n");
 
-			//STEP 2
-			fp = fopen("indexForQuery","r");
-			for ( i=0; i<wc; i++) { // looping through all query words
-				rewind(fp); // restart at beginning of file
-				j=0;
+
+			//*** STEP 2 ***
+			fp = fopen("indexForQuery","r"); //index file to read from
+		
+			
+			for ( i=0; i<wc; i++) { // loop through all query words (excluding AND and OR)
+				rewind(fp); // restart at beginning of file for each word
 				
 				do { // scan through each line of file
-					fscanf(fp, "%50s", unique);  // get word, no longer than 50 characters
+					fscanf(fp, "%50s", unique);  // get unique word, no longer than 50 characters
 						
-					// loop until end of line. End of line determined by failing to match two integers
+					// loop until end of line (determined by failing to match two integers, since docID and count come in pairs)
 					while ((status = fscanf(fp, "%d %d", &id, &count)) == 2) {
-						
-						if (strcmp(words[i],unique)==0) { // if unique is a query match
+						if (strcmp(words[i],unique)==0) { // if unique word matches query word
+							uniqFlag = 1;
 							printf("%s:%d ", unique, count);
-								
+							minCount = count;
 						}
-					} // end scan of line
-
-					if (j==0) { // update min to smallest amount
-						min = count;
-						j = 1;
-					}
-					if (count < min)
-						min = count;		
+					} // end scan of line		
 
 				} while (status != EOF); // end scan of file
 
+				if ((minCount<min) && (uniqFlag==1)) {
+					min = minCount;
+					uniqFlag = 0; //resets uniqFlag for next unique word
+				}
 			}
 			
 			printf("-- %d\n",min);
