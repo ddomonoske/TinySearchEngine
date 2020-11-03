@@ -58,7 +58,7 @@ bool fn(void* elementp, const void* word) {
 		return false;
 }
 
-
+/*
 void rank_fn(void *p){
 	char *unique;
 	int count;
@@ -67,9 +67,8 @@ void rank_fn(void *p){
 	count = p->count
 	
 	printf("rank: 
-
 }
-
+*/
 
 
 
@@ -90,10 +89,23 @@ int main (void) {
 	char delimits[] = " \t\n"; //set delimiters as space and tab
 	int i,j,wc; //to store and print words from words array
 	
-	hashtable_t *hp;
-	wc_t *wc_found;
-	counters_t *doc;
-	int id = 1;
+	hashtable_t *hp; //to store index hashtable
+	wc_t *wc_found; //to store wc_t objects with *words that match query words
+	///int id = 1;
+	
+	//NOTE: each mention of doc refers to counter_t (docID, count) object
+	queue_t *sortqp; //queue to store docs containing ALL words in query
+	queue_t *indexqp; //queue associated with each word in the index, contains docs
+	counters_t *doc; //to hold each doc from the indexqp (might make more sense to name this docIndex)
+	counters_t *docSort; //to hold each doc from the sortqp
+	
+	counters_t *docMatchInSort; //to hold matching doc if sortqp already contains the doc
+	counters_t *docMatchInIndex; //to hold matching doc if indexqp contains the doc
+	counters_t *docRemoved;
+
+	
+	int flag = 0;
+	
 	
 	printf(" > ");	
 
@@ -102,6 +114,7 @@ int main (void) {
 	
 		if (NormalizeWord(input)) { //input can only contain alphabetic-characters and white space
     		
+    		//*** STEP 1 ***
 			wc=0; //rewrite words array for each new input 
 			words[wc] = strtok(input,delimits); //strtok() splits input according to delimits and returns next token
 			
@@ -114,27 +127,94 @@ int main (void) {
 			for(j = 0; j<wc; j++) { //print words in words array
 				printf("%s ", words[j]);
 			}
-			printf("\n");
-
+			printf("\n\n");
+			
 			//*** STEP 2 ***
-			hp = indexload("indexForQuery");
+			hp = indexload("indexForQuery"); //creates index hashtable from indexed file
 			
-			for(i=0; i<wc; i++) {
+			//*** STEP 3 ***
+			sortqp = qopen(); //create sortQueue
+
+			
+			for(i=0; i<wc; i++) { //for each query word
 				
-				if((strcmp(words[i],"and")!=0) && (strcmp(words[i],"or")!=0) && (strlen(words[i])>=3)){
+				if((strcmp(words[i],"and")!=0) && (strcmp(words[i],"or")!=0) && (strlen(words[i])>=3)){ //filters our and, or, and len<3 words
 					
-					if ((wc_found = hsearch(hp, fn, words[i], strlen(words[i]))) != NULL) {
+					if ((wc_found = hsearch(hp, fn, words[i], strlen(words[i]))) != NULL) { //if word found in index
 						
-						doc = qsearch(wc_found->qp, QueueSearchFn, &id);
-						printf("%s:%d ", wc_found->word, doc->count);
+						printf("\nword '%s' found in hastable index\n",wc_found->word);
+						//*** STEP 2 ***
+						//doc = qsearch(wc_found->qp, QueueSearchFn, &id);
+						//printf("%s:%d ", wc_found->word, doc->count);
 						
-					
+						
+						//*** STEP 3 ***
+						/* Antony
+						- Create sortQueue
+						- for first query word, add all docs and count (counter_t objects) to a sortQueue 
+						- for next query word, get each doc from in indexQueue associated with the word
+							- If docID already exists in sortQueue, only update sortQueue if new docID->count is less than current docID->count 
+							- If docID does NOT exist in sortQueue, don't add to sortQueue(bc it means the doc didn't contain first query word, and thus doesn't satisfy ALL query words) 
+	
+	
+						Queues required
+						- indexQueue - queue from hashtable associated with each matching query word
+						- sortQueue - to store docs as we go through each indexQueue
+							-> for each new query word (after the first query), qget from this sortQueue, compare with docs in indexQueue 
+							-> If appears in indexQueue, then all good, and do nothing (OR add to backupQueue/)
+							-> If does not appear, means that docID does not contain ALL query words, so remove from sortQueue (don't put into backupQueue??)
+						- backupQueue?? - queue that is eventually turned into real queue (dont really understand this queue)
+
+						*/
+						
+						//NOTE: each mention of doc refers to counter_t object
+						
+						indexqp = wc_found->qp; //returns the indexQueue of docs for the matching word
+						
+						while ((doc = qget(indexqp)) != NULL) { //get each doc from indexqp						
+							printf("indexqp not empty yet\n");
+							
+							if (flag==0) { //if first query word
+								printf("First query word. Adding all docs into sortqp\n");
+								qput(sortqp,doc); //put each doc into sortqp
+								flag=1;
+							}
+							
+							else { //if NOT first query word, only put select docs into sortqp, and also need to remove some docs from sortqp
+								printf("not first query word\n");
+								//PART 1: Update count for each doc in sortqp if it appears in indexqp
+								if((docMatchInSort = qsearch(sortqp, QueueSearchFn, &(doc->id))) != NULL) { //if doc already exists in sortqp				
+									printf("docID already exists in sortqp\n");
+									if(doc->count < docMatchInSort->count) { 
+										printf("updated docID count\n");
+										docMatchInSort->count = doc->count; //update count of doc IF the frequency of new word is lower
+									}
+								} //if doc does NOT exist in sortqp, then we can ignore it
+								
+								//PART 2: For each doc in sortqp, only keep if also appears in indexqp
+								while ((docSort = qget(sortqp)) != NULL) { //for each doc already in sortqp, check to make sure it also appears in current indexqp
+									printf("retrieving doc from sortqp\n");
+									if((docMatchInIndex = qsearch(indexqp, QueueSearchFn, &(docSort->id))) == NULL) { //if docSort NOT found in indexqp, 
+										//do nothing bc get already removed doc from sortqp
+										printf("removing doc from sortqp bc doesnt appear in indexqp\n");
+									}
+									else {
+										qput(sortqp,docSort); //if docSort IS found in indexqp, then put back into sortqp
+										printf("sortqp appears in indexqp, putting back into sortqp\n");
+									}
+								}
+								
+								//NOTE: Is there a way to combine PART 1 and PART 2 to increase run time? Or are they two very separate steps?
+								
+							} //end of sortqp updating
+						
+						} //end of while loop for a specific indexqp
+						qclose(indexqp); 
 					}
-					
-			
 				}
-			}
-			
+				
+			} //end of query word, move onto next query word
+			qclose(sortqp);
 		
 		} // end of valid query search
 		else printf("[invalid query]"); //reject queries containing non-alphabetic/non-whitespace characters
