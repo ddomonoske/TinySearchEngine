@@ -101,8 +101,6 @@ int main (void) {
 	
 	counters_t *docMatchInSort; //to hold matching doc if sortqp already contains the doc
 	counters_t *docMatchInIndex; //to hold matching doc if indexqp contains the doc
-	counters_t *docRemoved;
-
 	
 	int flag = 0;
 	
@@ -155,7 +153,7 @@ int main (void) {
 						- for next query word, get each doc from in indexQueue associated with the word
 							- If docID already exists in sortQueue, only update sortQueue if new docID->count is less than current docID->count 
 							- If docID does NOT exist in sortQueue, don't add to sortQueue(bc it means the doc didn't contain first query word, and thus doesn't satisfy ALL query words) 
-	
+							- For each doc in sortqp, only keep if also appears in indexqp. If not appear in indexqp, I remove from sortqp
 	
 						Queues required
 						- indexQueue - queue from hashtable associated with each matching query word
