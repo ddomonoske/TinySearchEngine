@@ -18,11 +18,8 @@
 #include "webpage.h"
 #include "queue.h"
 #include "hash.h"
-#include "indexio.h"
 
 #define MAX 200
-
-
 
 /* checks for non-alphabetic characters
  *   - if non-alphabetic character found, returns false
@@ -46,41 +43,6 @@ bool NormalizeWord(char *word) {
 }
 
 
-/* fn() compares words[i] with indexed words
- * returns bool
- */
-bool fn(void* elementp, const void* word) {
-	wc_t *ep = (wc_t*)elementp;
-	char *wp = (char*)word;
-	if (strcmp(ep->word,wp) == 0)  // true if the word is a match
-		return true;
-	else
-		return false;
-}
-
-
-void rank_fn(void *p){
-	char *unique;
-	int count;
-	
-	unique = p->word;
-	count = p->count
-	
-	printf("rank: 
-
-}
-
-
-
-
-/* look in queue for element with matching doc ID
- */
-bool QueueSearchFn(void* elementp, const void* docID) { //requires (void* elementp, const void* keyp)
-	counters_t *doc = (counters_t*)elementp;
-	int *id = (int*)docID;
-	return (doc->id == *id); //if match return true
-}
-
 
 int main (void) {
 
@@ -88,12 +50,14 @@ int main (void) {
 	char *words[10]; //array to store input (max input = 10 words)
 	
 	char delimits[] = " \t\n"; //set delimiters as space and tab
-	int i,j,wc; //to store and print words from words array
+	int j,wc; //to store and print words from words array
 	
-	hashtable_t *hp;
-	wc_t *wc_found;
-	counters_t *doc;
-	int id = 1;
+	FILE *fp;
+	char unique[51]; // to store each unique word from index file we read
+	int i,id,count,status; //variables for Step 2
+	int uniqFlag = 0;
+	int minCount = 10001;
+	int min = 10000;
 	
 	printf(" > ");	
 
@@ -116,26 +80,45 @@ int main (void) {
 			}
 			printf("\n");
 
+
 			//*** STEP 2 ***
-			hp = indexload("indexForQuery");
+			fp = fopen("indexForQuery","r"); //index file to read from
+		
 			
-			for(i=0; i<wc; i++) {
+			for ( i=0; i<wc; i++) { // loop through all query words (excluding AND and OR)
+			
+				if((strcmp(words[i],"and")!=0) && (strcmp(words[i],"or")!=0)){
 				
-				if((strcmp(words[i],"and")!=0) && (strcmp(words[i],"or")!=0) && (strlen(words[i])>=3)){
-					
-					if ((wc_found = hsearch(hp, fn, words[i], strlen(words[i]))) != NULL) {
+					rewind(fp); // restart at beginning of file for each word
+				
+					do { // scan through each line of file
+						fscanf(fp, "%50s", unique);  // get unique word, no longer than 50 characters
 						
-						doc = qsearch(wc_found->qp, QueueSearchFn, &id);
-						printf("%s:%d ", wc_found->word, doc->count);
+						// loop until end of line (determined by failing to match two integers, since docID and count come in pairs)
+						while ((status = fscanf(fp, "%d %d", &id, &count)) == 2) {
+							if (strcmp(words[i],unique)==0) { // if unique word matches query word
+								uniqFlag = 1;
+								printf("%s:%d ", unique, count);
+								minCount = count;
+							}
+						} // end scan of line		
 						
-					
-					}
-					
-			
+						if ((minCount<min) && (uniqFlag==1)) {
+							min = minCount;
+							uniqFlag = 0; //resets uniqFlag for next unique word
+						}
+
+					} while (status != EOF); // end scan of file
+
 				}
 			}
 			
-		
+			if (min != 10000){
+				printf("-- %d\n",min);
+				min = 10000;
+				minCount = 10001;
+			}
+
 		} // end of valid query search
 		else printf("[invalid query]"); //reject queries containing non-alphabetic/non-whitespace characters
 			
