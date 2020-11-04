@@ -111,7 +111,8 @@ void ranking (char **words, hashtable_t *hp, int wc, queue_t *sortqp) {
 			qput(backupq, curr); //add original to backupqp
 		
 		}
-		qconcat(wc_found->qp, backupq); //concatenate backup to wc_found so wc_found is like how it started
+		qclose(wc_found->qp);
+		wc_found->qp = backupq;		
 		
 		for (int i=1; i<wc; i++){ //loop through the rest of the queried words
 			char *curr_word = words[i];
@@ -218,7 +219,8 @@ int main (void) {
 				qput(backupq, curr); //add original to backupqp
 				qsize++;
 			}	
-			qconcat(sortqp, backupq);	
+			qclose(sortqp);
+			sortqp = backupq;
 			
 			if(qsize > 1){
 				//make array that we can use to sort
@@ -253,6 +255,9 @@ int main (void) {
 					fgets(url, MAX_PATH_LENGTH, fp);
 
 					printf("%s", url);
+					
+					fclose(fp);
+				
 				} else {
 					printf("ERROR- no doc found\n");
 				}
