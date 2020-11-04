@@ -70,15 +70,15 @@ bool DocSearch(void* elementp, const void* docID) { //requires (void* elementp, 
 
 int minIndex(queue_t *sortqp, int sortedIndex, int qsize){
 	int min_index = -1;
-	int minID = INT_MAX;
+	int minRank = INT_MAX;
 	counters_t *qfront;
 				
 	for (int i=0; i<qsize; i++){
 		qfront = qget(sortqp);
 					
-		if ((qfront->id <= minID) && (i <= sortedIndex)){
+		if ((qfront->count <= minRank) && (i <= sortedIndex)){
 			min_index = i;
-			minID = qfront->id;
+			minRank = qfront->count;
 		}
 		qput(sortqp, qfront);		
 	}
@@ -102,52 +102,55 @@ void insertMinToRear (queue_t *sortqp, int min_index, int qsize){
 }
 
 
-void update (queue_t *sortqp, queue_t *check){
+
+void update (queue_t *sortqp, queue_t *indexqp){
 	queue_t *backupq = qopen();
 	counters_t *curr;
 	
-	while ((curr = qget(sortqp)) != NULL) { 
+	while ((curr = qget(sortqp)) != NULL) { //loop through each doc element in sortqp
 		counters_t *found_doc;
 		
-		if ((found_doc = qsearch(check, DocSearch, &curr->id)) == NULL){
-			free(curr);
+		if ((found_doc = qsearch(indexqp, DocSearch, &curr->id)) == NULL){ //if doc element does not exist in indexqp 
+																		   //(implies doc does not have all query words)
+			free(curr); //delete doc element from sortqp
 		}
 		else {
-			if (curr->count > found_doc->count){
-				curr->count = found_doc->count;
+			if (curr->count > found_doc->count){ //if count of new query word is less than current doc rank
+				curr->count = found_doc->count; //update the rank
 			}
-			
-			qput(backupq, curr);
+			qput(backupq, curr); //make copy of curr in backup (because curr was qget from sortqp)
 		}
 	}
-	qconcat(sortqp, backupq);
+	qconcat(sortqp, backupq); //re add all qualifying docs into sortqp
+	
 }
 
 
 void ranking (char **words, hashtable_t *hp, int wc, queue_t *sortqp) {
 	wc_t *wc_found;
 
-	if ((wc_found = hsearch(hp, fn, words[0], strlen(words[0]))) != NULL) { //if word found in index
+	if ((wc_found = hsearch(hp, fn, words[0], strlen(words[0]))) != NULL) { //if first word found in the hashtable index
+		//if first word not found, the rest should not run
 		queue_t *backupq = qopen();
 		counters_t *curr;
 		
-		while ((curr = qget(wc_found->qp)) != NULL) { 
-			counters_t *doc = malloc(sizeof(counters_t));
+		while ((curr = qget(wc_found->qp)) != NULL) { //loop through each doc element in first word queue
+			counters_t *doc = malloc(sizeof(counters_t)); //duplicate curr object
 			doc->count = curr->count;
 			doc->id = curr->id;
 			
-			qput(sortqp, doc);
-			qput(backupq, curr);
+			qput(sortqp, doc); //add duplicate to sortqp
+			qput(backupq, curr); //add original to backupqp
 		
 		}
 		qconcat(wc_found->qp, backupq); //concatenate backup to wc_found so wc_found is like how it started
 		
-		for (int i=1; i<wc; i++){
+		for (int i=1; i<wc; i++){ //loop through the rest of the queried words
 			char *curr_word = words[i];
-			if((strcmp(curr_word,"and")!=0) && (strlen(curr_word)>=3)){
+			if((strcmp(curr_word,"and")!=0) && (strlen(curr_word)>=3)){ //filter out ands
 				wc_t *found_word;
-				if ((found_word = hsearch(hp, fn, curr_word, strlen(curr_word))) != NULL) { 	
-					update(sortqp, found_word->qp);
+				if ((found_word = hsearch(hp, fn, curr_word, strlen(curr_word))) != NULL) { //search for remaining query words in hashtable index
+					update(sortqp, found_word->qp); //if found, need to update sortqp
 				}
 				else {
 					printf("word is not in the document \n");
@@ -162,7 +165,7 @@ void ranking (char **words, hashtable_t *hp, int wc, queue_t *sortqp) {
 int main (void) {
 
 	char input[200]; //to store unparsed user input
-	char **words; //array to store input (max input = 10 words)
+	char **words = malloc(20*sizeof(char*)); //array to store input (max input = 10 words)
 	
 	char delimits[] = " \t\n"; //set delimiters as space and tab
 	int wc; //to store and print words from words array
@@ -171,7 +174,6 @@ int main (void) {
 	queue_t *sortqp; //queue to store docs containing ALL words in query
 	
 	int qsize, min_index;
-	counters_t *tmpForSize;
 	counters_t *tmpForPrint;
 	
 	printf(" > ");	
@@ -196,18 +198,27 @@ int main (void) {
 			}
 			printf("\n\n");
 			
-			//*** STEP 2 ***
-			hp = indexload("indexForQuery"); //creates index hashtable from indexed file
+			//  *** STEP 2 (RANKING) ***
+			hp = indexload("indexForQuery2"); //creates index hashtable from indexed file
 			
 			
 			sortqp = qopen();
-			ranking(words, hp, wc, sortqp);
-				
+			ranking(words, hp, wc, sortqp); //add all qualifying docs into sortqp with correct rank
+			
+			
+			//  *** SORTING STEP ***
 			qsize = 0;		
-			while ((tmpForSize = qget(sortqp)) != NULL){
+			queue_t *backupq = qopen();
+			counters_t *curr;
+			while ((curr = qget(sortqp)) != NULL){
+				printf("checking sortqp: id = %d, rank = %d \n", curr->id, curr->count);
+				qput(backupq, curr); //add original to backupqp
 				qsize++;
-				qput(sortqp,tmpForSize);
-			}		
+			}	
+			qconcat(sortqp, backupq);	
+			
+			printf("qsize = %d \n", qsize);	
+	
 
 			for(int k=0; k<qsize; k++){
 				min_index = minIndex(sortqp, qsize-k, qsize);
@@ -218,7 +229,6 @@ int main (void) {
 				printf("rank:%d doc:%d : \n", tmpForPrint->count, tmpForPrint->id);
 			}
 			
-			//insert processing of sortqp
 			qclose(sortqp);
 		
 			
