@@ -30,6 +30,12 @@ typedef struct wc {
 	queue_t *qp;
 } wc_t;
 
+
+/* used to make the incrementing file names
+ */
+char* itoa(char *a, int i);
+
+
 /*
  * make a wc_t object
  *   - malloc space for object and for word

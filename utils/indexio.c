@@ -15,6 +15,14 @@
 static FILE *fp;
 
 
+/* used to make the incrementing file names
+ */
+char* itoa(char *a, int i) {
+	sprintf(a, "%d", i);
+	return a;
+}
+
+
 /*
  * saveCount
  */
