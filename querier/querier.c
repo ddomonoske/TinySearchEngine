@@ -118,9 +118,9 @@ void ranking (char **words, hashtable_t *hp, int wc, queue_t *sortqp) {
 			if((strcmp(curr_word,"and")!=0) && (strlen(curr_word)>=3)){ //filter out ands
 			
 				//need to check if word is "or" (fork here based on if it is or not)
-					//need to also check if or is the last word
-					//need to also check if you have "and or", "and and", etc. 
-			
+				//need to also check if or is the last word
+				//need to also check if you have "and or", "and and", etc. 
+				
 			
 				wc_t *found_word;
 				if ((found_word = hsearch(hp, fn, curr_word, strlen(curr_word))) != NULL) { //search for remaining query words in hashtable index
@@ -233,12 +233,29 @@ int main (void) {
 				qget(sortqp); //remove the original unsorted elements in sortqp
 			}
 
+			char cwd[MAX_PATH_LENGTH];
+			char *pagedir = "../pages2";
+			getcwd(cwd, sizeof(cwd));
+			chdir(pagedir);
+			
 			counters_t *tmpForPrint;
 			while ((tmpForPrint = qget(sortqp)) != NULL){
-				printf("rank:%d doc:%d \n", tmpForPrint->count, tmpForPrint->id);
+				printf("rank:%d doc:%d : ", tmpForPrint->count, tmpForPrint->id);
+
+				char doc_id[10];
+				if (access(itoa(doc_id, tmpForPrint->id), F_OK) != -1) {
+					FILE *fp = fopen(doc_id, "r");
+					char url[MAX_PATH_LENGTH];
+					fgets(url, MAX_PATH_LENGTH, fp);
+
+					printf("%s\n", url);
+				} else {
+					printf("ERROR- no doc found\n");
+				}
 			}	
+
+			chdir(cwd);
 			
-			////   ****** need to add ability to print url *******
 			
 			qclose(sortqp);
 			
