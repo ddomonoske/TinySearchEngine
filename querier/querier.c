@@ -220,19 +220,21 @@ int main (void) {
 			}	
 			qconcat(sortqp, backupq);	
 			
-			//make array that we can use to sort
-			counters_t* qarray[qsize];
+			if(qsize > 1){
+				//make array that we can use to sort
+				counters_t* qarray[qsize];
 			
-			for (int i=0; i<qsize; i++){
-				qarray[i] = qget(sortqp); //copy all of the sortqp elements into qarray
-				qput(sortqp,qarray[i]);
-			}
+				for (int i=0; i<qsize; i++){
+					qarray[i] = qget(sortqp); //copy all of the sortqp elements into qarray
+					qput(sortqp,qarray[i]);
+				}
 			
-			sortArray(qarray, qsize); //sort qarray
+				sortArray(qarray, qsize); //sort qarray
 			
-			for (int k=0; k<qsize; k++){
-				qput(sortqp, qarray[k]); //put all the qarray elements into the back of sortqp
-				qget(sortqp); //remove the original unsorted elements in sortqp
+				for (int k=0; k<qsize; k++){
+					qput(sortqp, qarray[k]); //put all the qarray elements into the back of sortqp
+					qget(sortqp); //remove the original unsorted elements in sortqp
+				}
 			}
 
 			char cwd[MAX_PATH_LENGTH];
@@ -250,7 +252,7 @@ int main (void) {
 					char url[MAX_PATH_LENGTH];
 					fgets(url, MAX_PATH_LENGTH, fp);
 
-					printf("%s\n", url);
+					printf("%s", url);
 				} else {
 					printf("ERROR- no doc found\n");
 				}
