@@ -172,7 +172,9 @@ int main (void) {
 	
 	int qsize;
 	
-	printf(" > ");	
+	printf(" > ");
+
+	hp = indexload("indexForQuery2"); //creates index hashtable from indexed file
 
 	//note: use fgets, not scanf, in order to read entire line 
 	while (fgets(input, MAX, stdin) != NULL) { //loops until user enters EOF (ctrl+d)
@@ -198,7 +200,7 @@ int main (void) {
 			
 			
 			//  *** STEP 2 (RANKING) ***
-			hp = indexload("indexForQuery2"); //creates index hashtable from indexed file
+			//hp = indexload("indexForQuery2"); //creates index hashtable from indexed file
 			
 			
 			sortqp = qopen();
@@ -264,13 +266,15 @@ int main (void) {
 		else printf("[invalid query]"); //reject queries containing non-alphabetic/non-whitespace characters
 			
 		printf("\n > ");
-		happly(hp, freeWord);
-		hclose(hp);
 		
 		//SEG FAULT WHEN INVALID QUERY	
 		//sort doesn't work with one element in sortqp
 	}
+	
+	happly(hp, freeWord);
+	hclose(hp);
 		
+	
 	printf("\n"); //add new line after user terminates with ctrl+d
 	exit(EXIT_SUCCESS);
 	
