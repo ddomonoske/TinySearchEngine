@@ -68,7 +68,9 @@ bool DocSearch(void* elementp, const void* docID) { //requires (void* elementp, 
 }
 
 
-queue_t* update (queue_t *sortqp, queue_t *indexqp){
+
+
+void update (queue_t *sortqp, queue_t *indexqp){
 	queue_t *backupq = qopen();
 	counters_t *curr;
 	
@@ -86,8 +88,9 @@ queue_t* update (queue_t *sortqp, queue_t *indexqp){
 			qput(backupq, curr); //make copy of curr in backup (because curr was qget from sortqp)
 		}
 	}
-	qclose(sortqp);
-	return backupq;
+	qconcat(sortqp, backupq);
+	//qclose(sortqp);
+	//sortqp = backupq;
 	
 }
 
@@ -127,7 +130,7 @@ void ranking (char **words, hashtable_t *hp, int wc, queue_t *sortqp) {
 			
 				wc_t *found_word;
 				if ((found_word = hsearch(hp, fn, curr_word, strlen(curr_word))) != NULL) { //search for remaining query words in hashtable index
-					sortqp = update(sortqp, found_word->qp); //if found, need to update sortqp
+					update(sortqp, found_word->qp); //if found, need to update sortqp
 					printf("word found \n");
 				}
 				else {
@@ -136,8 +139,6 @@ void ranking (char **words, hashtable_t *hp, int wc, queue_t *sortqp) {
 				}
 			}
 		}
-		
-		
 	}
 }
 
@@ -185,6 +186,13 @@ int main (void) {
 	//note: use fgets, not scanf, in order to read entire line 
 	while (fgets(input, MAX, stdin) != NULL) { //loops until user enters EOF (ctrl+d)
 	
+		if (strlen(input)<=1){
+			printf(" > ");
+			continue;
+		}
+		
+		input[strlen(input)-1] = '\0';
+		
 		if (NormalizeWord(input)) { //input can only contain alphabetic-characters and white space
     		
     		// *** STEP 1 ***
