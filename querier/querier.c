@@ -195,7 +195,7 @@ int main (void) {
 			
 			
 			//  *** SORTING STEP ***
-			
+
 			//Check for qsize
 			qsize = 0;		
 			queue_t *backupq = qopen();
@@ -207,31 +207,21 @@ int main (void) {
 			}	
 			qconcat(sortqp, backupq);	
 			
-			printf("qsize = %d \n", qsize);	
-			
-	
-			//INSERT SORTING FUNCTION CALLS
-			//////////////////////////////
-			//I think the best way is to loop through the queue with qget (replacing after removing with qput)
-			//and copy all the elements into an array of nodes.
 			
 			//Then we can sort the array with bubble sort and recreate the queue with qput for printing
 			counters_t* qarray[qsize];
 			for (int i=0; i<qsize; i++){
-				qarray[i] = qget(sortqp);
+				qarray[i] = qget(sortqp); //copy all of the sortqp elements into qarray
 				qput(sortqp,qarray[i]);
 			}
 			
-			sortArray(qarray, qsize);
+			sortArray(qarray, qsize); //sort qarray
 			
 			for (int k=0; k<qsize; k++){
-				qput(sortqp, qarray[k]);
+				qput(sortqp, qarray[k]); //put all the qarray elements into the back of sortqp
+				qget(sortqp); //remove the original unsorted elements in sortqp
 			}
-				
-			for (int m=0; m<qsize; m++){
-				qget(sortqp);
-			}
-			
+
 			counters_t *tmpForPrint;
 			while ((tmpForPrint = qget(sortqp)) != NULL){
 				printf("rank:%d doc:%d \n", tmpForPrint->count, tmpForPrint->id);
