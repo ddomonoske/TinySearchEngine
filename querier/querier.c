@@ -68,41 +68,6 @@ bool DocSearch(void* elementp, const void* docID) { //requires (void* elementp, 
 }
 
 
-int minIndex(queue_t *sortqp, int sortedIndex, int qsize){
-	int min_index = -1;
-	int minRank = INT_MAX;
-	counters_t *qfront;
-				
-	for (int i=0; i<qsize; i++){
-		qfront = qget(sortqp);
-					
-		if ((qfront->count <= minRank) && (i <= sortedIndex)){
-			min_index = i;
-			minRank = qfront->count;
-		}
-		qput(sortqp, qfront);		
-	}
-	return min_index;
-}
-
-			
-void insertMinToRear (queue_t *sortqp, int min_index, int qsize){
-	counters_t *min;
-	counters_t *qfront;
-				
-	for (int i=0; i<qsize; i++){
-		qfront = qget(sortqp);
-					
-		if (i != min_index)
-			qput(sortqp, qfront);
-		else
-			min = qfront;
-	}			
-	qput(sortqp, min);
-}
-
-
-
 void update (queue_t *sortqp, queue_t *indexqp){
 	queue_t *backupq = qopen();
 	counters_t *curr;
@@ -173,7 +138,7 @@ int main (void) {
 	hashtable_t *hp; //to store index hashtable
 	queue_t *sortqp; //queue to store docs containing ALL words in query
 	
-	int qsize, min_index;
+	int qsize;
 	counters_t *tmpForPrint;
 	
 	printf(" > ");	
@@ -207,6 +172,8 @@ int main (void) {
 			
 			
 			//  *** SORTING STEP ***
+			
+			//Check for qsize
 			qsize = 0;		
 			queue_t *backupq = qopen();
 			counters_t *curr;
@@ -218,12 +185,20 @@ int main (void) {
 			qconcat(sortqp, backupq);	
 			
 			printf("qsize = %d \n", qsize);	
+			
+			
+			
 	
-
-			for(int k=0; k<qsize; k++){
-				min_index = minIndex(sortqp, qsize-k, qsize);
-				insertMinToRear(sortqp, min_index, qsize);
-			}
+			//INSERT SORTING FUNCTION CALLS
+			//////////////////////////////
+			//I think the best way is to loop through the queue with qget (replacing after removing with qput)
+			//and copy all the elements into an array of nodes.
+			
+			//Then we can sort the array with bubble sort and recreate the queue with qput for printing
+					
+			
+			
+			
 			
 			while ((tmpForPrint = qget(sortqp)) != NULL){
 				printf("rank:%d doc:%d : \n", tmpForPrint->count, tmpForPrint->id);
