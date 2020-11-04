@@ -86,7 +86,8 @@ void update (queue_t *sortqp, queue_t *indexqp){
 			qput(backupq, curr); //make copy of curr in backup (because curr was qget from sortqp)
 		}
 	}
-	qconcat(sortqp, backupq); //re add all qualifying docs into sortqp
+	qclose(sortqp);
+	sortqp = backupq;
 	
 }
 
@@ -126,6 +127,7 @@ void ranking (char **words, hashtable_t *hp, int wc, queue_t *sortqp) {
 				wc_t *found_word;
 				if ((found_word = hsearch(hp, fn, curr_word, strlen(curr_word))) != NULL) { //search for remaining query words in hashtable index
 					update(sortqp, found_word->qp); //if found, need to update sortqp
+					printf("word found \n");
 				}
 				else {
 					printf("word is not in the document \n");
@@ -133,6 +135,8 @@ void ranking (char **words, hashtable_t *hp, int wc, queue_t *sortqp) {
 				}
 			}
 		}
+		
+		
 	}
 }
 
@@ -163,7 +167,7 @@ void sortArray (counters_t* qarray[], int qsize){
 int main (void) {
 
 	char input[200]; //to store unparsed user input
-	char **words = malloc(20*sizeof(char*)); //array to store input (max input = 10 words)
+	char *words[20];
 	
 	char delimits[] = " \t\n"; //set delimiters as space and tab
 	int wc; //to store and print words from words array
@@ -186,7 +190,7 @@ int main (void) {
 			wc=0; //rewrite words array for each new input 
 			words[wc] = strtok(input,delimits); //strtok() splits input according to delimits and returns next token
 			
-			while (words[wc] != NULL) { //stores all input words into words array
+			while ((words[wc] != NULL) && (wc<20)) { //stores all input words into words array
 				//printf("%s ",words[i]); 
 				wc++;
 				words[wc] = strtok(NULL,delimits); //continue splitting input until strktok returns NULL (no more tokens)
@@ -286,4 +290,14 @@ int main (void) {
 	exit(EXIT_SUCCESS);
 	
 }
+
+
+////Stuff to do
+
+// -add max word entered error
+
+
+
+
+
 
