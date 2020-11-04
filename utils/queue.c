@@ -94,6 +94,7 @@ void qclose(queue_t *qp) {
 			free(prev);	//free *next pointer
 		}
 		free(hp);
+		hp = NULL;
 		print("The queue has been freed\n");
 	}
 		
@@ -323,9 +324,12 @@ void qconcat(queue_t *q1p, queue_t *q2p){
 	qheader_t *hp1;
 	qheader_t *hp2;
 
-	if ((q1p == NULL) || (q2p == NULL)) {	
+	if ((q1p == NULL) && (q2p == NULL)) {	
 		print("Queue is NULL\n");
 	} 
+	else if ((q1p == NULL) && (q2p != NULL)){
+		q1p = q2p;
+	}
 	else {
 	
 		hp1 = (qheader_t*)q1p;
@@ -337,10 +341,17 @@ void qconcat(queue_t *q1p, queue_t *q2p){
 		else if (hp1->front == NULL) {
 			hp1->front = hp2->front;
 			hp1->back = hp2->back;
+			
+			hp2->front = NULL;
+			hp2->back = NULL;
+			qclose(hp2);
 		} else {
 			(hp1->back)->next = hp2->front;
 			hp1->back = hp2->back;
-			free(hp2);
+			
+			hp2->front = NULL;
+			hp2->back = NULL;
+			qclose(hp2);
 		}
 	}
 }
