@@ -15,7 +15,8 @@
 static FILE *fp;
 
 
-/* used to make the incrementing file names
+/* places the string version of int i in string a. also returns a
+ * used frequently to get the file name from a docID
  */
 char* itoa(char *a, int i) {
 	sprintf(a, "%d", i);

@@ -186,7 +186,7 @@ int main (void) {
 	
 		if (NormalizeWord(input)) { //input can only contain alphabetic-characters and white space
     		
-    		//*** STEP 1 ***
+    		// *** STEP 1 ***
 			wc=0; //rewrite words array for each new input 
 			words[wc] = strtok(input,delimits); //strtok() splits input according to delimits and returns next token
 			
