@@ -86,14 +86,6 @@ bool QueueSearchFn(void* elementp, const void* docID) { //requires (void* elemen
 }
 
 
-/* used to make the incrementing file names
- */
-char* itoa(char *a, int i) {
-	sprintf(a, "%d", i);
-	return a;
-}
-
-
 int main(int argc, char *argv[] ) {
 	char *pagedir, *indexnm;
 	char doc_id[10], cwd[MAX_PATH_LENGTH];
