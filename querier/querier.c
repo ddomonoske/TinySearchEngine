@@ -94,6 +94,9 @@ void update (queue_t *sortqp, queue_t *indexqp){
 void ranking (char **words, hashtable_t *hp, int wc, queue_t *sortqp) {
 	wc_t *wc_found;
 
+	
+	//need to check if first word is valid
+
 	if ((wc_found = hsearch(hp, fn, words[0], strlen(words[0]))) != NULL) { //if first word found in the hashtable index
 		//if first word not found, the rest should not run
 		queue_t *backupq = qopen();
@@ -113,6 +116,12 @@ void ranking (char **words, hashtable_t *hp, int wc, queue_t *sortqp) {
 		for (int i=1; i<wc; i++){ //loop through the rest of the queried words
 			char *curr_word = words[i];
 			if((strcmp(curr_word,"and")!=0) && (strlen(curr_word)>=3)){ //filter out ands
+			
+				//need to check if word is "or" (fork here based on if it is or not)
+					//need to also check if or is the last word
+					//need to also check if you have "and or", "and and", etc. 
+			
+			
 				wc_t *found_word;
 				if ((found_word = hsearch(hp, fn, curr_word, strlen(curr_word))) != NULL) { //search for remaining query words in hashtable index
 					update(sortqp, found_word->qp); //if found, need to update sortqp
@@ -132,8 +141,7 @@ void swap(counters_t** xp, counters_t** yp) {
 	*xp = *yp;
 	*yp = tmp;
 }	
-			
-			
+				
 	
 void sortArray (counters_t* qarray[], int qsize){
 	int max_index;
@@ -207,8 +215,7 @@ int main (void) {
 			}	
 			qconcat(sortqp, backupq);	
 			
-			
-			//Then we can sort the array with bubble sort and recreate the queue with qput for printing
+			//make array that we can use to sort
 			counters_t* qarray[qsize];
 			for (int i=0; i<qsize; i++){
 				qarray[i] = qget(sortqp); //copy all of the sortqp elements into qarray
@@ -227,16 +234,20 @@ int main (void) {
 				printf("rank:%d doc:%d \n", tmpForPrint->count, tmpForPrint->id);
 			}	
 			
+			////   ****** need to add ability to print url *******
+			
 			qclose(sortqp);
 			
 		
-			
 		} // end of valid query search
 		else printf("[invalid query]"); //reject queries containing non-alphabetic/non-whitespace characters
 			
 		printf("\n > ");
 		happly(hp, freeWord);
 		hclose(hp);
+		
+		//SEG FAULT WHEN INVALID QUERY	
+		//sort doesn't work with one element in sortqp
 	}
 		
 	printf("\n"); //add new line after user terminates with ctrl+d
