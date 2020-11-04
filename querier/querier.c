@@ -127,6 +127,30 @@ void ranking (char **words, hashtable_t *hp, int wc, queue_t *sortqp) {
 }
 
 
+void swap(counters_t** xp, counters_t** yp) {
+	counters_t* tmp = *xp;
+	*xp = *yp;
+	*yp = tmp;
+}	
+			
+			
+	
+void sortArray (counters_t* qarray[], int qsize){
+	int max_index;
+		
+	for (int i=0; i<qsize-1; i++){
+		
+		max_index = i;
+		for (int j=i+1; j<qsize; j++){
+			if (qarray[j]->count > qarray[max_index]->count){
+				max_index = j;
+			}
+		}
+		swap(&qarray[max_index], &qarray[i]);
+	}
+}
+
+
 int main (void) {
 
 	char input[200]; //to store unparsed user input
@@ -139,7 +163,6 @@ int main (void) {
 	queue_t *sortqp; //queue to store docs containing ALL words in query
 	
 	int qsize;
-	counters_t *tmpForPrint;
 	
 	printf(" > ");	
 
@@ -158,7 +181,7 @@ int main (void) {
 				words[wc] = strtok(NULL,delimits); //continue splitting input until strktok returns NULL (no more tokens)
 			}
 			
-			for(int j = 0; j<wc; j++) { //print words in words array
+			for(int j=0; j<wc; j++) { //print words in words array
 				printf("%s ", words[j]);
 			}
 			printf("\n\n");
@@ -186,8 +209,6 @@ int main (void) {
 			
 			printf("qsize = %d \n", qsize);	
 			
-			
-			
 	
 			//INSERT SORTING FUNCTION CALLS
 			//////////////////////////////
@@ -195,16 +216,29 @@ int main (void) {
 			//and copy all the elements into an array of nodes.
 			
 			//Then we can sort the array with bubble sort and recreate the queue with qput for printing
-					
-			
-			
-			
-			
-			while ((tmpForPrint = qget(sortqp)) != NULL){
-				printf("rank:%d doc:%d : \n", tmpForPrint->count, tmpForPrint->id);
+			counters_t* qarray[qsize];
+			for (int i=0; i<qsize; i++){
+				qarray[i] = qget(sortqp);
+				qput(sortqp,qarray[i]);
 			}
 			
+			sortArray(qarray, qsize);
+			
+			for (int k=0; k<qsize; k++){
+				qput(sortqp, qarray[k]);
+			}
+				
+			for (int m=0; m<qsize; m++){
+				qget(sortqp);
+			}
+			
+			counters_t *tmpForPrint;
+			while ((tmpForPrint = qget(sortqp)) != NULL){
+				printf("rank:%d doc:%d \n", tmpForPrint->count, tmpForPrint->id);
+			}	
+			
 			qclose(sortqp);
+			
 		
 			
 		} // end of valid query search
