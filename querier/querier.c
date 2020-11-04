@@ -68,7 +68,7 @@ bool DocSearch(void* elementp, const void* docID) { //requires (void* elementp, 
 }
 
 
-void update (queue_t *sortqp, queue_t *indexqp){
+queue_t* update (queue_t *sortqp, queue_t *indexqp){
 	queue_t *backupq = qopen();
 	counters_t *curr;
 	
@@ -87,7 +87,7 @@ void update (queue_t *sortqp, queue_t *indexqp){
 		}
 	}
 	qclose(sortqp);
-	sortqp = backupq;
+	return backupq;
 	
 }
 
@@ -113,7 +113,8 @@ void ranking (char **words, hashtable_t *hp, int wc, queue_t *sortqp) {
 		
 		}
 		qclose(wc_found->qp);
-		wc_found->qp = backupq;		
+		wc_found->qp = backupq;	
+		
 		
 		for (int i=1; i<wc; i++){ //loop through the rest of the queried words
 			char *curr_word = words[i];
@@ -126,7 +127,7 @@ void ranking (char **words, hashtable_t *hp, int wc, queue_t *sortqp) {
 			
 				wc_t *found_word;
 				if ((found_word = hsearch(hp, fn, curr_word, strlen(curr_word))) != NULL) { //search for remaining query words in hashtable index
-					update(sortqp, found_word->qp); //if found, need to update sortqp
+					sortqp = update(sortqp, found_word->qp); //if found, need to update sortqp
 					printf("word found \n");
 				}
 				else {
@@ -226,6 +227,8 @@ int main (void) {
 			qclose(sortqp);
 			sortqp = backupq;
 			
+			
+			
 			if(qsize > 1){
 				//make array that we can use to sort
 				counters_t* qarray[qsize];
@@ -265,6 +268,7 @@ int main (void) {
 				} else {
 					printf("ERROR- no doc found\n");
 				}
+				free(tmpForPrint);
 			}	
 
 			chdir(cwd);
@@ -290,11 +294,6 @@ int main (void) {
 	exit(EXIT_SUCCESS);
 	
 }
-
-
-////Stuff to do
-
-// -add max word entered error
 
 
 
