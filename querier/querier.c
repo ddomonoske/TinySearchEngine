@@ -194,6 +194,9 @@ int main (void) {
 			}
 			printf("\n\n");
 			
+			
+			
+			
 			//  *** STEP 2 (RANKING) ***
 			hp = indexload("indexForQuery2"); //creates index hashtable from indexed file
 			
@@ -217,6 +220,7 @@ int main (void) {
 			
 			//make array that we can use to sort
 			counters_t* qarray[qsize];
+			
 			for (int i=0; i<qsize; i++){
 				qarray[i] = qget(sortqp); //copy all of the sortqp elements into qarray
 				qput(sortqp,qarray[i]);
