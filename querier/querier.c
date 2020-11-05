@@ -117,6 +117,7 @@ void update(queue_t *sortqp, queue_t *indexqp) {
 		}
 	}
 	qconcat(sortqp, backupq);
+	//qclose(backupq);
 	//qclose(sortqp);
 	//sortqp = backupq;
 	
@@ -158,6 +159,8 @@ void ranking (char **words, hashtable_t *hp, int wc, queue_t *sortqp) {
 			
 				wc_t *found_word;
 				if ((found_word = hsearch(hp, fn, curr_word, strlen(curr_word))) != NULL) { //search for remaining query words in hashtable index
+					//					printf("about to add THIS QUEUE to sortqp:\n");
+					//qapply(found_word->qp,printQueue);
 					update(sortqp, found_word->qp); //if found, need to update sortqp
 					printf("word found \n");
 				}
@@ -192,6 +195,33 @@ void sortArray (counters_t* qarray[], int qsize){
 		}
 		swap(&qarray[max_index], &qarray[i]);
 	}
+}
+
+
+/* check if a string is "and" or "or"
+ * used as shorthand inside validateQuery
+ */
+bool isAO(char *s) {
+	return ( (strcmp(s,"and")==0) || (strcmp(s,"or")==0) );
+}
+
+/* validate that AND and OR have been used correctly in the search queue
+ *  - cannot begin or end with AND/OR
+ *  - cannot have two AND/ORs in a row
+ */
+bool validateQuery(char *words[],int wc) {
+	bool prev,curr;
+	
+	if (isAO(words[0]) || isAO(words[wc-1]))
+		return false;
+
+	prev = false;
+	for (int i=1; i<wc-1; i++) {
+		curr = isAO(words[i]);
+		if (curr && prev) return false;
+		prev = curr;
+	}
+	return true;
 }
 
 
@@ -237,123 +267,120 @@ int main (void) {
 				words[wc] = strtok(NULL,delimits); //continue splitting input until strktok returns NULL (no more tokens)
 			}
 
-/*			for(int j=0; j<wc; j++) { //print words in words array
-				printf("%s ", words[j]);
-			}
-			printf("\n\n");
-*/
+			if (validateQuery(words,wc)) {
 			
-      // remove all instances of "and" in words[]
-			int i=0;
-			for (int j=0; j<wc; j++) {
-				if ( strcmp(words[j],"and")!=0 ) {
-					words[i++] = words[j];
+				// remove all instances of "and" in words[]
+				int i=0;
+				for (int j=0; j<wc; j++) {
+					if ( strcmp(words[j],"and")!=0 ) {
+						words[i++] = words[j];
+					}
 				}
-			}
-			wc=i;
-
-			// track beginning location and length of each substring separated by "or"
-			i=0;
-			or_count=0;
-			or_subs[0].b = 0; // first address begins at 0
-			for (int j=0; j<wc; j++) {
-				if ( strcmp(words[j],"or")==0 ) {
-					or_subs[or_count++].l=i; // i is the length of last substring
-					or_subs[or_count].b=j+1; // j+1 is the address of the next substring
-					i=0;
-				} else i++;
-			}
-			or_subs[or_count].l=i;
-			or_count++;
-		
-			printf("or_count: %d\n",or_count);
-			for (int j=0; j<or_count; j++) {
-				printf("%d %d\n",or_subs[j].b, or_subs[j].l);
-			}
-			printf("\n\n");
-			
-			//  *** STEP 2 (RANKING) ***
-			//hp = indexload("indexForQuery2"); //creates index hashtable from indexed file
-
-			
-			sortqp = qopen();
-			i=0;
-			do {
-				printf("i: %d\n", i);
-				if (or_subs[i].l > 0) {
-					queue_t *newqp = qopen();
-					ranking(&(words[or_subs[i].b]), hp, or_subs[i].l, newqp); //add all qualifying docs into sortqp with correct rank
-					combine(sortqp,newqp);
-				}
-				i++;
-			} while ( i<or_count );
-			
-			//  *** SORTING STEP ***
-
-			//Check for qsize
-			qsize = 0;		
-			queue_t *backupq = qopen();
-			counters_t *curr;
-			while ((curr = qget(sortqp)) != NULL){
-				printf("checking sortqp: id = %d, rank = %d \n", curr->id, curr->count);
-				qput(backupq, curr); //add original to backupqp
-				qsize++;
-			}	
-			qclose(sortqp);
-			sortqp = backupq;
-			
-			
-			
-			if(qsize > 1){
-				//make array that we can use to sort
-				counters_t* qarray[qsize];
-			
-				for (int i=0; i<qsize; i++){
-					qarray[i] = qget(sortqp); //copy all of the sortqp elements into qarray
-					qput(sortqp,qarray[i]);
-				}
-			
-				sortArray(qarray, qsize); //sort qarray
-			
-				for (int k=0; k<qsize; k++){
-					qput(sortqp, qarray[k]); //put all the qarray elements into the back of sortqp
-					qget(sortqp); //remove the original unsorted elements in sortqp
-				}
-			}
-
-			char cwd[MAX_PATH_LENGTH];
-			char *pagedir = "../pages2";
-			getcwd(cwd, sizeof(cwd));
-			chdir(pagedir);
-			
-			counters_t *tmpForPrint;
-			while ((tmpForPrint = qget(sortqp)) != NULL){
-				printf("rank:%d doc:%d : ", tmpForPrint->count, tmpForPrint->id);
-
-				char doc_id[10];
-				if (access(itoa(doc_id, tmpForPrint->id), F_OK) != -1) {
-					FILE *fp = fopen(doc_id, "r");
-					char url[MAX_PATH_LENGTH];
-					fgets(url, MAX_PATH_LENGTH, fp);
-
-					printf("%s", url);
-					
-					fclose(fp);
+				wc=i;
 				
-				} else {
-					printf("ERROR- no doc found\n");
+				// track beginning location and length of each substring separated by "or"
+				i=0;
+				or_count=0;
+				or_subs[0].b = 0; // first address begins at 0
+				for (int j=0; j<wc; j++) {
+					if ( strcmp(words[j],"or")==0 ) {
+						or_subs[or_count++].l=i; // i is the length of last substring
+						or_subs[or_count].b=j+1; // j+1 is the address of the next substring
+						i=0;
+					} else i++;
 				}
-				free(tmpForPrint);
-			}	
-
-			chdir(cwd);
-			
-			qclose(sortqp);
-			
-		
+				or_subs[or_count].l=i;
+				or_count++;
+				
+				printf("or_count: %d\n",or_count);
+				for (int j=0; j<or_count; j++) {
+					printf("%d %d\n",or_subs[j].b, or_subs[j].l);
+				}
+				printf("\n\n");
+				
+				//  *** STEP 2 (RANKING) ***
+				//hp = indexload("indexForQuery2"); //creates index hashtable from indexed file
+				
+				
+				sortqp = qopen();
+				i=0;
+				do {
+					printf("i: %d\n", i);
+					if (or_subs[i].l > 0) {
+						queue_t *newqp = qopen();
+						ranking(&(words[or_subs[i].b]), hp, or_subs[i].l, newqp); //add all qualifying docs into sortqp with correct rank
+						combine(sortqp,newqp);
+					}
+					i++;
+				} while ( i<or_count );
+				
+				//  *** SORTING STEP ***
+				
+				//Check for qsize
+				qsize = 0;		
+				queue_t *backupq = qopen();
+				counters_t *curr;
+				while ((curr = qget(sortqp)) != NULL){
+					printf("checking sortqp: id = %d, rank = %d \n", curr->id, curr->count);
+					qput(backupq, curr); //add original to backupqp
+					qsize++;
+				}	
+				qclose(sortqp);
+				sortqp = backupq;
+				
+				
+				
+				if(qsize > 1){
+					//make array that we can use to sort
+					counters_t* qarray[qsize];
+					
+					for (int i=0; i<qsize; i++){
+						qarray[i] = qget(sortqp); //copy all of the sortqp elements into qarray
+						qput(sortqp,qarray[i]);
+					}
+					
+					sortArray(qarray, qsize); //sort qarray
+					
+					for (int k=0; k<qsize; k++){
+						qput(sortqp, qarray[k]); //put all the qarray elements into the back of sortqp
+						qget(sortqp); //remove the original unsorted elements in sortqp
+					}
+				}
+				
+				char cwd[MAX_PATH_LENGTH];
+				char *pagedir = "../pages2";
+				getcwd(cwd, sizeof(cwd));
+				chdir(pagedir);
+				
+				counters_t *tmpForPrint;
+				while ((tmpForPrint = qget(sortqp)) != NULL){
+					printf("rank:%d doc:%d : ", tmpForPrint->count, tmpForPrint->id);
+					
+					char doc_id[10];
+					if (access(itoa(doc_id, tmpForPrint->id), F_OK) != -1) {
+						FILE *fp = fopen(doc_id, "r");
+						char url[MAX_PATH_LENGTH];
+						fgets(url, MAX_PATH_LENGTH, fp);
+						
+						printf("%s", url);
+						
+						fclose(fp);
+						
+					} else {
+						printf("ERROR- no doc found\n");
+					}
+					free(tmpForPrint);
+				}	
+				
+				chdir(cwd);
+				
+				qclose(sortqp);
+				
+			}
+			else printf("[invalid query]"); //reject queries containing improper AND/OR usage
 		} // end of valid query search
 		else printf("[invalid query]"); //reject queries containing non-alphabetic/non-whitespace characters
-			
+		
 		printf("\n > ");
 		
 		//SEG FAULT WHEN INVALID QUERY	
@@ -361,7 +388,7 @@ int main (void) {
 	
 	happly(hp, freeWord);
 	hclose(hp);
-		
+	
 	
 	printf("\n"); //add new line after user terminates with ctrl+d
 	exit(EXIT_SUCCESS);
