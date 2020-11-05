@@ -119,7 +119,7 @@ void update(queue_t *sortqp, queue_t *indexqp) {
 			}
 			qput(backupq, curr); //make copy of curr in backup (because curr was qget from sortqp)
 		}
-	}
+	}cd ..
 	qconcat(sortqp, backupq);
 }
 
@@ -245,7 +245,8 @@ int main (int argc, char *argv[]) {
 	FILE* streamPrint;
 	FILE* outputfp;
 				
-	
+	FILE *crawlerfp; //used to check that crawler dir exists and is indeed a crawler directory
+	char crawlerCheck[100];
 	
 	// *** STEP 5 ***
 	
@@ -262,10 +263,7 @@ int main (int argc, char *argv[]) {
 
 	// Check that pagedir/.crawler exists
 	pagedir = argv[1];
-	
-	char crawlerCheck[100];
 	sprintf(crawlerCheck,"%s/.crawler", pagedir); //string to access ../pages/.crawler
-	FILE *crawlerfp;
 	
 	if ( (crawlerfp = fopen(crawlerCheck,"r")) == NULL) {
 		printf("directory is not crawler directory\n");
