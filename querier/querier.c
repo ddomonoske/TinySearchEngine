@@ -370,10 +370,7 @@ int main (int argc, char *argv[]) {
 				qclose(sortqp);
 				sortqp = backupq;
 
-				if (qsize ==0)
-					printf("0 pages matched query\n");
-				else
-					printf("%d pages matched query:\n",qsize);
+				printf("%d pages matched query:\n",qsize);
 				
 				if (qsize > 1){
 					//make array that we can use to sort
