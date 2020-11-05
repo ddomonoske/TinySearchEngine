@@ -21,8 +21,14 @@
 #include "hash.h"
 #include "indexio.h"
 
-#define MAX 200
+#define MAX_INPUT 200
+#define MAX_QUERY_WORD 20
 
+/* object to store the start and length of a substring */
+typedef struct substring {
+	uint32_t b;
+	uint32_t l;
+} substring_t;
 
 /* checks for non-alphabetic characters
  *   - if non-alphabetic character found, returns false
@@ -68,9 +74,31 @@ bool DocSearch(void* elementp, const void* docID) { //requires (void* elementp, 
 }
 
 
+/* 
+ * combine two queues together into mainqp through OR operation
+ *  - if a queue is in either list it will end up in the final one
+ *  - if a queue is in a single list the larger of the two ranks is taken
+ */
+void combine(queue_t *mainqp, queue_t *newqp) {
+	counters_t *curr;
+
+	while ((curr = qget(newqp)) != NULL) { //loop through each doc element in newqp
+		counters_t *found_doc;
+		
+		if ((found_doc = qsearch(mainqp, DocSearch, &curr->id)) == NULL){ //if doc element does not exist in mainqp 
+																		   //(implies doc does not have all query words)
+			qput(mainqp,curr); //delete doc element from sortqp
+		}
+		else {
+			found_doc->count += curr->count;
+			free(curr);
+		}
+	}
+	qclose(newqp);
+}
 
 
-void update (queue_t *sortqp, queue_t *indexqp){
+void update(queue_t *sortqp, queue_t *indexqp) {
 	queue_t *backupq = qopen();
 	counters_t *curr;
 	
@@ -135,6 +163,7 @@ void ranking (char **words, hashtable_t *hp, int wc, queue_t *sortqp) {
 				}
 				else {
 					printf("word is not in the document \n");
+					update(sortqp, NULL);
 					return;
 				}
 			}
@@ -168,11 +197,14 @@ void sortArray (counters_t* qarray[], int qsize){
 
 int main (void) {
 
-	char input[200]; //to store unparsed user input
-	char *words[20];
+	char input[MAX_INPUT+1]; //to store unparsed user input
+	char *words[MAX_QUERY_WORD];
 	
 	char delimits[] = " \t\n"; //set delimiters as space and tab
 	int wc; //to store and print words from words array
+
+	int or_count=0;
+	substring_t or_subs[MAX_QUERY_WORD];  // count of instances of "or" in words[]
 	
 	hashtable_t *hp; //to store index hashtable
 	queue_t *sortqp; //queue to store docs containing ALL words in query
@@ -184,7 +216,7 @@ int main (void) {
 	hp = indexload("indexForQuery2"); //creates index hashtable from indexed file
 
 	//note: use fgets, not scanf, in order to read entire line 
-	while (fgets(input, MAX, stdin) != NULL) { //loops until user enters EOF (ctrl+d)
+	while (fgets(input, MAX_INPUT, stdin) != NULL) { //loops until user enters EOF (ctrl+d)
 	
 		if (strlen(input)<=1){
 			printf(" > ");
@@ -197,29 +229,68 @@ int main (void) {
     		
     		// *** STEP 1 ***
 			wc=0; //rewrite words array for each new input 
-			words[wc] = strtok(input,delimits); //strtok() splits input according to delimits and returns next token
+			words[0] = strtok(input,delimits); //strtok() splits input according to delimits and returns next token
 			
 			while ((words[wc] != NULL) && (wc<20)) { //stores all input words into words array
-				//printf("%s ",words[i]); 
+				//printf("%s ",words[i]);
 				wc++;
 				words[wc] = strtok(NULL,delimits); //continue splitting input until strktok returns NULL (no more tokens)
 			}
-			
+
+/*			for(int j=0; j<wc; j++) { //print words in words array
+				printf("%s ", words[j]);
+			}
+			printf("\n\n");
+*/
+			// remove all instances of "and" in words[]
+			int i=0;
+			for (int j=0; j<wc; j++) {
+				if ( strcmp(words[j],"and")!=0 ) {
+					words[i++] = words[j];
+				}
+			}
+			wc=i;
+/*
+			printf("words[] without \"and\":\n");
 			for(int j=0; j<wc; j++) { //print words in words array
 				printf("%s ", words[j]);
 			}
 			printf("\n\n");
-			
-			
-			
+*/
+			// track beginning location and length of each substring separated by "or"
+			i=0;
+			or_count=0;
+			or_subs[0].b = 0; // first address begins at 0
+			for (int j=0; j<wc; j++) {
+				if ( strcmp(words[j],"or")==0 ) {
+					or_subs[or_count++].l=i; // i is the length of last substring
+					or_subs[or_count].b=j+1; // j+1 is the address of the next substring
+					i=0;
+				} else i++;
+			}
+			or_subs[or_count].l=i;
+			or_count++;
+		
+			printf("or_count: %d\n",or_count);
+			for (int j=0; j<or_count; j++) {
+				printf("%d %d\n",or_subs[j].b, or_subs[j].l);
+			}
+			printf("\n\n");
 			
 			//  *** STEP 2 (RANKING) ***
 			//hp = indexload("indexForQuery2"); //creates index hashtable from indexed file
-			
-			
+
 			sortqp = qopen();
-			ranking(words, hp, wc, sortqp); //add all qualifying docs into sortqp with correct rank
-			
+			i=0;
+			do {
+				printf("i: %d\n", i);
+				if (or_subs[i].l > 0) {
+					queue_t *newqp = qopen();
+					ranking(&(words[or_subs[i].b]), hp, or_subs[i].l, newqp); //add all qualifying docs into sortqp with correct rank
+					combine(sortqp,newqp);
+					i++;
+				}
+			} while ( i<or_count );
 			
 			//  *** SORTING STEP ***
 
@@ -281,7 +352,6 @@ int main (void) {
 
 			chdir(cwd);
 			
-			
 			qclose(sortqp);
 			
 		
@@ -291,7 +361,6 @@ int main (void) {
 		printf("\n > ");
 		
 		//SEG FAULT WHEN INVALID QUERY	
-		//sort doesn't work with one element in sortqp
 	}
 	
 	happly(hp, freeWord);
@@ -302,9 +371,4 @@ int main (void) {
 	exit(EXIT_SUCCESS);
 	
 }
-
-
-
-
-
 
