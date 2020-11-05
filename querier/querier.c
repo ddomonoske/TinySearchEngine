@@ -24,18 +24,19 @@
 #define MAX_INPUT 200
 #define MAX_QUERY_WORD 20
 
+
 /* object to store the start and length of a substring */
 typedef struct substring {
 	uint32_t b;
 	uint32_t l;
 } substring_t;
 
+
 /* checks for non-alphabetic characters
  *   - if non-alphabetic character found, returns false
  *   - otherwise, converts all characters to lowercase, and return true
  */
 bool NormalizeWord(char *word) {
-
 	int i, n = strlen(word);
 	char c;
 	
@@ -74,10 +75,9 @@ bool DocSearch(void* elementp, const void* docID) { //requires (void* elementp, 
 }
 
 
-/* 
- * combine two queues together into mainqp through OR operation
- *  - if a queue is in either list it will end up in the final one
- *  - if a queue is in a single list the larger of the two ranks is taken
+/* combine two queues together into mainqp through OR operation
+ *  - if a word is in either list it will end up in the final one
+ *  - if a word is in both queues the sum of the two ranks is taken
  */
 void combine(queue_t *mainqp, queue_t *newqp) {
 	counters_t *curr;
@@ -98,6 +98,10 @@ void combine(queue_t *mainqp, queue_t *newqp) {
 }
 
 
+/* update the sortqp with the indexqp using AND operation
+ *  - a word must be in both queues to be in final queue
+ *  - the smaller of the two ranks is placed in the final queue
+ */
 void update(queue_t *sortqp, queue_t *indexqp) {
 	queue_t *backupq = qopen();
 	counters_t *curr;
@@ -117,19 +121,18 @@ void update(queue_t *sortqp, queue_t *indexqp) {
 		}
 	}
 	qconcat(sortqp, backupq);
-	//qclose(backupq);
-	//qclose(sortqp);
-	//sortqp = backupq;
-	
 }
 
 
+/* create a rank for a queue of words
+ *  - all ranks are calculated using AND operation
+ *  - sortqp is not sorted at the end
+ *  - it is assumed that words have been grouped into sections separated by OR already
+ */
 void ranking (char **words, hashtable_t *hp, int wc, queue_t *sortqp) {
 	wc_t *wc_found;
-
 	
 	//need to check if first word is valid
-
 	if ((wc_found = hsearch(hp, fn, words[0], strlen(words[0]))) != NULL) { //if first word found in the hashtable index
 		//if first word not found, the rest should not run
 		queue_t *backupq = qopen();
@@ -150,23 +153,13 @@ void ranking (char **words, hashtable_t *hp, int wc, queue_t *sortqp) {
 		
 		for (int i=1; i<wc; i++){ //loop through the rest of the queried words
 			char *curr_word = words[i];
-			if((strcmp(curr_word,"and")!=0) && (strlen(curr_word)>=3)){ //filter out ands
-			
-				//need to check if word is "or" (fork here based on if it is or not)
-				//need to also check if or is the last word
-				//need to also check if you have "and or", "and and", etc. 
-				
-			
+			if( strlen(curr_word)>=3 ) { //filter out short words
 				wc_t *found_word;
 				if ((found_word = hsearch(hp, fn, curr_word, strlen(curr_word))) != NULL) { //search for remaining query words in hashtable index
-					//					printf("about to add THIS QUEUE to sortqp:\n");
-					//qapply(found_word->qp,printQueue);
 					update(sortqp, found_word->qp); //if found, need to update sortqp
-					printf("word found \n");
 				}
 				else {
-					printf("word is not in the document \n");
-					update(sortqp, NULL);
+					update(sortqp, NULL); // remove all elements from sortqp by AND with NULL
 					return;
 				}
 			}
@@ -175,18 +168,23 @@ void ranking (char **words, hashtable_t *hp, int wc, queue_t *sortqp) {
 }
 
 
+/* swap counters_t values
+ *  - for sortArray
+ */
 void swap(counters_t** xp, counters_t** yp) {
 	counters_t* tmp = *xp;
 	*xp = *yp;
 	*yp = tmp;
 }	
-				
-	
+
+
+/* sort an array of counter_t with size qsize
+ *  - bubble sort
+ */
 void sortArray (counters_t* qarray[], int qsize){
 	int max_index;
 		
-	for (int i=0; i<qsize-1; i++){
-		
+	for (int i=0; i<qsize-1; i++){		
 		max_index = i;
 		for (int j=i+1; j<qsize; j++){
 			if (qarray[j]->count > qarray[max_index]->count){
@@ -205,6 +203,7 @@ bool isAO(char *s) {
 	return ( (strcmp(s,"and")==0) || (strcmp(s,"or")==0) );
 }
 
+
 /* validate that AND and OR have been used correctly in the search queue
  *  - cannot begin or end with AND/OR
  *  - cannot have two AND/ORs in a row
@@ -212,13 +211,13 @@ bool isAO(char *s) {
 bool validateQuery(char *words[],int wc) {
 	bool prev,curr;
 	
-	if (isAO(words[0]) || isAO(words[wc-1]))
+	if (isAO(words[0]) || isAO(words[wc-1])) // key word at beginning or end
 		return false;
 
 	prev = false;
 	for (int i=1; i<wc-1; i++) {
 		curr = isAO(words[i]);
-		if (curr && prev) return false;
+		if (curr && prev) return false; // two key words in a row
 		prev = curr;
 	}
 	return true;
@@ -245,7 +244,7 @@ int main (int argc, char *argv[]) {
 	// *** STEP 5 ***
 	
 	char *pagedir, *indexnm, *query_txt, *myoutput;
-	int quietflag;
+	int quietflag=0;
 	FILE* stream;
 	
 	// Check that there are correct number of arguments
@@ -254,21 +253,22 @@ int main (int argc, char *argv[]) {
 		printf("USAGE: query <pageDirectory> <indexFile> [-q]\n");
 		exit(EXIT_FAILURE);
 	}
-	
+
+	// Check that pagedir exists
 	pagedir = argv[1];
 	if ( ! isDirExist(argv[1]) ) {
 		printf("The directory '%s' does not exist.\n", argv[1]);
 		exit(EXIT_FAILURE);
 	}
 	
-	
+	// check that indexnm exists
 	indexnm = argv[2];
 	if (access(indexnm, F_OK) == -1) {
 		printf("index file cannot be found\n");
 		exit(EXIT_FAILURE);
 	}
 	
-	
+	// check that quiet options are valid
 	if (argc == 6){
 		if ((strcmp(argv[3], "-q")) == 0) {
 			query_txt = argv[4];
@@ -287,17 +287,17 @@ int main (int argc, char *argv[]) {
 		}
 	}
 	
-	printf(" > ");
-
-	hp = indexload(indexnm); //creates index hashtable from indexed file
-	
+	// set input stream to file or stdin
 	if (quietflag == 1){
 		stream = fopen(query_txt, "r");
 	} else {
 		stream = stdin;
 	}
 
-
+	hp = indexload(indexnm); //creates index hashtable from indexed file
+	
+	printf(" > ");
+	
 	//note: use fgets, not scanf, in order to read entire line 
 	while (fgets(input, MAX_INPUT, stream) != NULL) { //loops until user enters EOF (ctrl+d)
 	
@@ -315,7 +315,6 @@ int main (int argc, char *argv[]) {
 			words[0] = strtok(input,delimits); //strtok() splits input according to delimits and returns next token
 			
 			while ((words[wc] != NULL) && (wc<20)) { //stores all input words into words array
-				//printf("%s ",words[i]);
 				wc++;
 				words[wc] = strtok(NULL,delimits); //continue splitting input until strktok returns NULL (no more tokens)
 			}
@@ -345,21 +344,12 @@ int main (int argc, char *argv[]) {
 				or_subs[or_count].l=i;
 				or_count++;
 				
-				printf("or_count: %d\n",or_count);
-				for (int j=0; j<or_count; j++) {
-					printf("%d %d\n",or_subs[j].b, or_subs[j].l);
-				}
-				printf("\n\n");
-				
 				//  *** STEP 2 (RANKING) ***
-				//hp = indexload("indexForQuery2"); //creates index hashtable from indexed file
-				
 				
 				sortqp = qopen();
 				i=0;
 				do {
-					printf("i: %d\n", i);
-					if (or_subs[i].l > 0) {
+					if (or_subs[i].l > 0) { // don't rank queries with 0 words
 						queue_t *newqp = qopen();
 						ranking(&(words[or_subs[i].b]), hp, or_subs[i].l, newqp); //add all qualifying docs into sortqp with correct rank
 						combine(sortqp,newqp);
@@ -374,14 +364,11 @@ int main (int argc, char *argv[]) {
 				queue_t *backupq = qopen();
 				counters_t *curr;
 				while ((curr = qget(sortqp)) != NULL){
-					printf("checking sortqp: id = %d, rank = %d \n", curr->id, curr->count);
 					qput(backupq, curr); //add original to backupqp
 					qsize++;
 				}	
 				qclose(sortqp);
 				sortqp = backupq;
-				
-				
 				
 				if(qsize > 1){
 					//make array that we can use to sort
@@ -400,7 +387,6 @@ int main (int argc, char *argv[]) {
 					}
 				}
 				
-
 				
 				counters_t *tmpForPrint;
 				FILE* streamPrint;
@@ -414,7 +400,6 @@ int main (int argc, char *argv[]) {
 				}
 				
 				char cwd[MAX_PATH_LENGTH];
-				//char *pagedir = "../pages2";
 				getcwd(cwd, sizeof(cwd));
 				chdir(pagedir);
 				
@@ -422,18 +407,20 @@ int main (int argc, char *argv[]) {
 					
 					fprintf(streamPrint, "rank:%d doc:%d : ", tmpForPrint->count, tmpForPrint->id);
 
+					// get the url of the doc
 					char doc_id[10];
 					if (access(itoa(doc_id, tmpForPrint->id), F_OK) != -1) {
 						FILE *fp = fopen(doc_id, "r");
 						char url[MAX_PATH_LENGTH];
-						fgets(url, MAX_PATH_LENGTH, fp);
+						fgets(url, MAX_PATH_LENGTH, fp); // url is first line of doc_id
+						fclose(fp);
 						
 						fprintf(streamPrint, "%s", url);
 
 					} else {
 						printf("ERROR- no doc found\n");
 					}
-					free(tmpForPrint);
+					free(tmpForPrint); // doc was taken from sortqp, must be freed
 				}	
 				
 				chdir(cwd);
@@ -451,17 +438,14 @@ int main (int argc, char *argv[]) {
 		
 		printf("\n > ");
 		
-		//SEG FAULT WHEN INVALID QUERY	
 	}
 	
 	happly(hp, freeWord);
 	hclose(hp);
 	
-	
 	if (quietflag == 1){
 		fclose(stream);
 	}
-	
 	
 	printf("\n"); //add new line after user terminates with ctrl+d
 	exit(EXIT_SUCCESS);
