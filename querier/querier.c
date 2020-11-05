@@ -119,7 +119,7 @@ void update(queue_t *sortqp, queue_t *indexqp) {
 			}
 			qput(backupq, curr); //make copy of curr in backup (because curr was qget from sortqp)
 		}
-	}cd ..
+	}
 	qconcat(sortqp, backupq);
 }
 
