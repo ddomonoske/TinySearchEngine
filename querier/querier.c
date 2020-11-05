@@ -225,7 +225,7 @@ bool validateQuery(char *words[],int wc) {
 }
 
 
-int main (void) {
+int main (int argc, char *argv[]) {
 
 	char input[MAX_INPUT+1]; //to store unparsed user input
 	char *words[MAX_QUERY_WORD];
@@ -241,12 +241,65 @@ int main (void) {
 	
 	int qsize;
 	
+	
+	// *** STEP 5 ***
+	
+	char *pagedir, *indexnm, *query_txt, *myoutput;
+	int quietflag;
+	FILE* stream;
+	
+	// Check that there are correct number of arguments
+	if ((argc!=3) && (argc!=6)) {
+		printf("in bad arguments\n");
+		printf("USAGE: query <pageDirectory> <indexFile> [-q]\n");
+		exit(EXIT_FAILURE);
+	}
+	
+	pagedir = argv[1];
+	if ( ! isDirExist(argv[1]) ) {
+		printf("The directory '%s' does not exist.\n", argv[1]);
+		exit(EXIT_FAILURE);
+	}
+	
+	
+	indexnm = argv[2];
+	if (access(indexnm, F_OK) == -1) {
+		printf("index file cannot be found\n");
+		exit(EXIT_FAILURE);
+	}
+	
+	
+	if (argc == 6){
+		if ((strcmp(argv[3], "-q")) == 0) {
+			query_txt = argv[4];
+			myoutput = argv[5];
+			
+			if (access(query_txt, F_OK) == -1) {
+				printf("query text file cannot be found\n");
+				exit(EXIT_FAILURE);
+			}
+			
+			quietflag = 1;
+		}
+		else {
+			printf("USAGE: query <pageDirectory> <indexFile> [-q] <query file name> <output file name>\n");
+			exit(EXIT_FAILURE);
+		}
+	}
+	
 	printf(" > ");
 
-	hp = indexload("indexForQuery2"); //creates index hashtable from indexed file
+	hp = indexload(indexnm); //creates index hashtable from indexed file
+	
+	if (quietflag == 1){
+		stream = fopen(query_txt, "r");
+	} else {
+		stream = stdin;
+	}
+
 
 	//note: use fgets, not scanf, in order to read entire line 
-	while (fgets(input, MAX_INPUT, stdin) != NULL) { //loops until user enters EOF (ctrl+d)
+	while (fgets(input, MAX_INPUT, stream) != NULL) { //loops until user enters EOF (ctrl+d)
 	
 		if (strlen(input)<=1){
 			printf(" > ");
@@ -347,25 +400,36 @@ int main (void) {
 					}
 				}
 				
+
+				
+				counters_t *tmpForPrint;
+				FILE* streamPrint;
+				FILE* outputfp;
+				
+				if (quietflag == 1){
+					outputfp = fopen(myoutput, "w");
+					streamPrint = outputfp;
+				} else {
+					streamPrint = stdout;
+				}
+				
 				char cwd[MAX_PATH_LENGTH];
-				char *pagedir = "../pages2";
+				//char *pagedir = "../pages2";
 				getcwd(cwd, sizeof(cwd));
 				chdir(pagedir);
 				
-				counters_t *tmpForPrint;
 				while ((tmpForPrint = qget(sortqp)) != NULL){
-					printf("rank:%d doc:%d : ", tmpForPrint->count, tmpForPrint->id);
 					
+					fprintf(streamPrint, "rank:%d doc:%d : ", tmpForPrint->count, tmpForPrint->id);
+
 					char doc_id[10];
 					if (access(itoa(doc_id, tmpForPrint->id), F_OK) != -1) {
 						FILE *fp = fopen(doc_id, "r");
 						char url[MAX_PATH_LENGTH];
 						fgets(url, MAX_PATH_LENGTH, fp);
 						
-						printf("%s", url);
-						
-						fclose(fp);
-						
+						fprintf(streamPrint, "%s", url);
+
 					} else {
 						printf("ERROR- no doc found\n");
 					}
@@ -373,6 +437,10 @@ int main (void) {
 				}	
 				
 				chdir(cwd);
+				
+				if (quietflag == 1){
+					fclose(outputfp);
+				}
 				
 				qclose(sortqp);
 				
@@ -388,6 +456,11 @@ int main (void) {
 	
 	happly(hp, freeWord);
 	hclose(hp);
+	
+	
+	if (quietflag == 1){
+		fclose(stream);
+	}
 	
 	
 	printf("\n"); //add new line after user terminates with ctrl+d
