@@ -225,7 +225,8 @@ bool validateQuery(char *words[],int wc) {
 
 
 int main (int argc, char *argv[]) {
-
+	printf("here\n");
+	
 	char input[MAX_INPUT+1]; //to store unparsed user input
 	char *words[MAX_QUERY_WORD];
 	

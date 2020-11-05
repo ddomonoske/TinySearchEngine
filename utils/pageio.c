@@ -17,6 +17,7 @@
 bool isDirExist(char *dir) {
 	stat_t s;
 	bool b;
+	
 	if(!stat(dir,&s)) {
 		if (S_ISDIR(s.st_mode))
 			b =  true;
@@ -24,7 +25,7 @@ bool isDirExist(char *dir) {
 			b = false;
 	} else
 		b = false;
-
+	
 	return b;
 }
 
