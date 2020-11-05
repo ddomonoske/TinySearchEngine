@@ -369,8 +369,13 @@ int main (int argc, char *argv[]) {
 				}	
 				qclose(sortqp);
 				sortqp = backupq;
+
+				if (qsize ==0)
+					printf("0 pages matched query\n");
+				else
+					printf("%d pages matched query:\n",qsize);
 				
-				if(qsize > 1){
+				if (qsize > 1){
 					//make array that we can use to sort
 					counters_t* qarray[qsize];
 					
@@ -405,7 +410,7 @@ int main (int argc, char *argv[]) {
 				
 				while ((tmpForPrint = qget(sortqp)) != NULL){
 					
-					fprintf(streamPrint, "rank:%d doc:%d : ", tmpForPrint->count, tmpForPrint->id);
+					fprintf(streamPrint, "rank:%d\t doc:%d\t: ", tmpForPrint->count, tmpForPrint->id);
 
 					// get the url of the doc
 					char doc_id[10];
@@ -432,9 +437,9 @@ int main (int argc, char *argv[]) {
 				qclose(sortqp);
 				
 			}
-			else printf("[invalid query]"); //reject queries containing improper AND/OR usage
+			else printf("[invalid query]\n"); //reject queries containing improper AND/OR usage
 		} // end of valid query search
-		else printf("[invalid query]"); //reject queries containing non-alphabetic/non-whitespace characters
+		else printf("[invalid query]\n"); //reject queries containing non-alphabetic/non-whitespace characters
 		
 		printf("\n > ");
 		
