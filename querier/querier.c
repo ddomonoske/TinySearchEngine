@@ -225,7 +225,7 @@ bool validateQuery(char *words[],int wc) {
 
 
 int main (int argc, char *argv[]) {
-	printf("here\n");
+	//printf("here\n");
 	
 	char input[MAX_INPUT+1]; //to store unparsed user input
 	char *words[MAX_QUERY_WORD];
@@ -241,6 +241,11 @@ int main (int argc, char *argv[]) {
 	
 	int qsize;
 	
+	counters_t *tmpForPrint; //variables used for printing
+	FILE* streamPrint;
+	FILE* outputfp;
+				
+	
 	
 	// *** STEP 5 ***
 	
@@ -255,13 +260,32 @@ int main (int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	}
 
-	// Check that pagedir exists
+	// Check that pagedir/.crawler exists
 	pagedir = argv[1];
-	if ( ! isDirExist(argv[1]) ) {
+	
+	char crawlerCheck[100];
+	sprintf(crawlerCheck,"%s/.crawler", pagedir); //string to access ../pages/.crawler
+	FILE *crawlerfp;
+	
+	if ( (crawlerfp = fopen(crawlerCheck,"r")) == NULL) {
+		printf("directory is not crawler directory\n");
+		exit(EXIT_FAILURE);	
+	}
+	fclose(crawlerfp); //only closes if exist
+
+/*
+	if ( ! isDirExist(argv[1]) ) { //if crawler directory does not exist
 		printf("The directory '%s' does not exist.\n", argv[1]);
 		exit(EXIT_FAILURE);
 	}
-	
+	else { //if does exist, need to check that it's actually a crawler directory
+		//chdir(pagedir); 
+		if (access("../pages/.crawler", F_OK) == -1) {
+			printf("directory is not crawler directory\n");
+			exit(EXIT_FAILURE);
+		}
+	}
+*/	
 	// check that indexnm exists
 	indexnm = argv[2];
 	if (access(indexnm, F_OK) == -1) {
@@ -279,7 +303,6 @@ int main (int argc, char *argv[]) {
 				printf("query text file cannot be found\n");
 				exit(EXIT_FAILURE);
 			}
-			
 			quietflag = 1;
 		}
 		else {
@@ -291,6 +314,9 @@ int main (int argc, char *argv[]) {
 	// set input stream to file or stdin
 	if (quietflag == 1){
 		stream = fopen(query_txt, "r");
+		
+		outputfp = fopen(myoutput, "w"); //clear myoutput file
+		fclose(outputfp);
 	} else {
 		stream = stdin;
 	}
@@ -303,7 +329,7 @@ int main (int argc, char *argv[]) {
 	while (fgets(input, MAX_INPUT, stream) != NULL) { //loops until user enters EOF (ctrl+d)
 	
 		if (strlen(input)<=1){
-			printf(" > ");
+			printf("\n > ");
 			continue;
 		}
 		
@@ -320,6 +346,16 @@ int main (int argc, char *argv[]) {
 				words[wc] = strtok(NULL,delimits); //continue splitting input until strktok returns NULL (no more tokens)
 			}
 
+			// PRINTING QUERY WORDS IN MYOUTPUT FILE
+			if (quietflag == 1) { 
+				outputfp = fopen(myoutput, "a"); //append each query word into output file
+				for (int j=0;j<wc;j++) {
+					fprintf(outputfp,"%s ",words[j]);
+				}
+				fprintf(outputfp,"\n");
+				fclose(outputfp);
+			}
+		
 			if (validateQuery(words,wc)) {
 			
 				// remove all instances of "and" in words[]
@@ -358,6 +394,7 @@ int main (int argc, char *argv[]) {
 					i++;
 				} while ( i<or_count );
 				
+				
 				//  *** SORTING STEP ***
 				
 				//Check for qsize
@@ -389,14 +426,11 @@ int main (int argc, char *argv[]) {
 						qget(sortqp); //remove the original unsorted elements in sortqp
 					}
 				}
-				
-				
-				counters_t *tmpForPrint;
-				FILE* streamPrint;
-				FILE* outputfp;
+
+				//  *** PRINTING STEP (either to stdout, or to file) ***
 				
 				if (quietflag == 1){
-					outputfp = fopen(myoutput, "w");
+					outputfp = fopen(myoutput, "a"); //append each query result into output file (so we dont rewrite)
 					streamPrint = outputfp;
 				} else {
 					streamPrint = stdout;

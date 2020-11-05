@@ -4,7 +4,7 @@
 
 ./querier ./ # number of arg test 
 
-./querier ./badname ../indexer/indexName1 # not valid crawler dir test
+./querier ./ ../indexer/indexName1 # not valid crawler dir test
 
 ./querier ./ file   # unreadable file test 
 
