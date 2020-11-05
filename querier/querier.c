@@ -242,7 +242,8 @@ int main (void) {
 			}
 			printf("\n\n");
 */
-			// remove all instances of "and" in words[]
+			
+      // remove all instances of "and" in words[]
 			int i=0;
 			for (int j=0; j<wc; j++) {
 				if ( strcmp(words[j],"and")!=0 ) {
@@ -250,13 +251,7 @@ int main (void) {
 				}
 			}
 			wc=i;
-/*
-			printf("words[] without \"and\":\n");
-			for(int j=0; j<wc; j++) { //print words in words array
-				printf("%s ", words[j]);
-			}
-			printf("\n\n");
-*/
+
 			// track beginning location and length of each substring separated by "or"
 			i=0;
 			or_count=0;
@@ -280,6 +275,7 @@ int main (void) {
 			//  *** STEP 2 (RANKING) ***
 			//hp = indexload("indexForQuery2"); //creates index hashtable from indexed file
 
+			
 			sortqp = qopen();
 			i=0;
 			do {
@@ -288,8 +284,8 @@ int main (void) {
 					queue_t *newqp = qopen();
 					ranking(&(words[or_subs[i].b]), hp, or_subs[i].l, newqp); //add all qualifying docs into sortqp with correct rank
 					combine(sortqp,newqp);
-					i++;
 				}
+				i++;
 			} while ( i<or_count );
 			
 			//  *** SORTING STEP ***
