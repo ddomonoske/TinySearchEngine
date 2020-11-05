@@ -55,6 +55,8 @@ int main (int argc, char *argv[]) {
 	
 	int pos = 0; //used for webpage_getNextURL function
 	char *URLresult; //pointer to string, used to store each embedded URL during getNextURL
+	
+	FILE *crawlerfp; //pointer to a .crawler file, to indicate that the pagedir is a crawler dir
 
 	// Checking inputs for STEP 6
 	if (argc != 4) {
@@ -62,12 +64,12 @@ int main (int argc, char *argv[]) {
 		printf("USAGE: crawler <seedurl> <pagedir> <maxdepth>\n");
 		exit(EXIT_FAILURE);
 	}
-	seedurl = argv[1];
+	seedurl = argv[1]; //root URL of crawl
 	if ( ! IsInternalURL(seedurl) ) {
 		printf("The seed URL is not internal\n");
 		exit(EXIT_FAILURE);
 	}
-	pagedir = argv[2];
+	pagedir = argv[2]; //crawler directory to save all ID files
 	if ( ! isDirExist(argv[2]) ) {
 		printf("The directory '%s' does not exist.\n", argv[2]);
 		exit(EXIT_FAILURE);
@@ -76,7 +78,7 @@ int main (int argc, char *argv[]) {
 		printf("The max depth must be greater than 0.\n");
 		exit(EXIT_FAILURE);
 	} else
-		maxdepth = atoi(argv[3]);
+		maxdepth = atoi(argv[3]); //depth of crawl
 	
 	qp = qopen();
 	hp = hopen(hsize);
@@ -120,9 +122,14 @@ int main (int argc, char *argv[]) {
 			}
 		}
 		webpage_delete((void*)page);
-	} while ((page = qget(qp)) != NULL) ;
+	} while ((page = qget(qp)) != NULL) ; //finishes adding crawled pages into crawler directory
 
 	printf("\nTotal: %d web pages stored\n",id-1);
+	
+	chdir(pagedir); //enter crawler dir
+	crawlerfp = fopen(".crawler","w"); //created hidden .crawler file within crawler dir
+	fclose(crawlerfp);
+	
   
 	//DEALLOCATE all memory used
 	qclose(qp); //close queue
