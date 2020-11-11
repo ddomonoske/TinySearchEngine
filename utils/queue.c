@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 
-static bool print_message = false; // control printing to screen
+static bool print_message = true; // control printing to screen
 
 /* defines each node of a queue */
 typedef struct node {
@@ -28,7 +28,7 @@ typedef struct node {
  */
 static void print(char *message) {
 	if (print_message) {
-		fprintf(stderr,"~hash.c -> ");
+		fprintf(stderr,"~queue.c -> ");
 		fprintf(stderr,"%s\n", message);
 	}
 }

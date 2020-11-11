@@ -54,3 +54,11 @@ void* lqremove(lqueue_t *lqp,
  * q2 is dealocated, closed, and unusable upon completion 
  */
 void lqconcat(lqueue_t *q1p, lqueue_t *q2p);
+
+
+
+//set value internal to module that sets time to wait between lock and unlock functions
+//will sleep for that amount of time before unlocking
+void setDelay(int time);
+	
+	

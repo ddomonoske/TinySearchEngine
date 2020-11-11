@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "lqueue.h"
+#include <unistd.h> //for sleep function
+
 
 static bool print_message = false; // control printing to screen
 
@@ -19,6 +21,15 @@ static void print(char *message) {
 		fprintf(stderr,"~hash.c -> ");
 		fprintf(stderr,"%s\n", message);
 	}
+}
+
+
+//set value internal to module that sets time to wait between lock and unlock functions
+//will sleep for that amount of time before unlocking
+void setDelay(int time) {
+   
+   printf("Sleeping %d seconds\n",time);
+   sleep(time);
 }
 
 
@@ -82,8 +93,13 @@ int32_t lqput(lqueue_t *lqp, void *elementp) {
 	hp = (lqheader_t*)lqp; //case lqp into local object type
 
 	pthread_mutex_lock(&(hp->m));
+	printf("lqp locked\n");
+	
 	status = qput(hp->qp,elementp); //puts elementp into lqp
+	
+	setDelay(10);	//hold lock for 10 second
 	pthread_mutex_unlock(&(hp->m));
+	printf("lqp unlocked\n");
 	
 	return(status);
 }
@@ -94,6 +110,7 @@ int32_t lqput(lqueue_t *lqp, void *elementp) {
 void* lqget(lqueue_t *lqp) {
 
 	lqheader_t *hp;	
+	void *tmp;
 	
 	if (lqp == NULL) {	
 		print("Error: queue is NULL\n");
@@ -101,12 +118,32 @@ void* lqget(lqueue_t *lqp) {
 	}
 	
 	hp = (lqheader_t*)lqp;
-	return (qget(hp->qp)); //returns element from lqueue
+	
+	pthread_mutex_lock(&(hp->m));
+	tmp = qget(hp->qp);
+	pthread_mutex_unlock(&(hp->m));
+
+	return (tmp); //returns element from lqueue
 }
 
 
-/* apply a function to every element of the queue */
-void lqapply(lqueue_t *lqp, void (*fn)(void* elementp));
+/* apply a function to every element of the locked queue */
+void lqapply(lqueue_t *lqp, void (*fn)(void* elementp)) {
+
+	lqheader_t *hp;
+
+	if (lqp == NULL || fn == NULL ) {	//checks inputs
+		print("lqp or fn is NULL\n");
+	} 
+	else {
+		hp = (lqheader_t*)lqp;
+		
+		pthread_mutex_lock(&(hp->m));
+		qapply(hp->qp,fn);	//qapply to each queue
+		pthread_mutex_unlock(&(hp->m));
+	}
+
+}
 
 /* search a queue using a supplied boolean function
  * skeyp -- a key to search for
@@ -119,7 +156,24 @@ void lqapply(lqueue_t *lqp, void (*fn)(void* elementp));
  */
 void* lqsearch(lqueue_t *lqp, 
 							bool (*searchfn)(void* elementp,const void* keyp),
-							const void* skeyp);
+							const void* skeyp) {
+							
+	lqheader_t *hp;
+	void *tmp;
+	
+	if (lqp == NULL) {	//check inputs
+		print("Locked queue is NULL\n");
+		return NULL;
+	}
+	
+	hp = (lqheader_t*)lqp;
+	
+	pthread_mutex_lock(&(hp->m));
+	tmp = qsearch(hp->qp,searchfn,skeyp);	//search locked queue
+	pthread_mutex_unlock(&(hp->m));
+	
+	return(tmp);	
+}
 
 // NOT MENTIONED IN MODULE STEP
 /* search a queue using a supplied boolean function (as in qsearch),
@@ -133,4 +187,29 @@ void* lqremove(lqueue_t *lqp,
 /* concatenatenates elements of q2 into q1
  * q2 is dealocated, closed, and unusable upon completion 
  */
-void lqconcat(lqueue_t *q1p, lqueue_t *q2p);
+void lqconcat(lqueue_t *lq1p, lqueue_t *lq2p) {
+
+	lqheader_t *hp1;
+	lqheader_t *hp2;
+	
+	if ((lq1p == NULL) && (lq2p == NULL)) {	
+		print("One of the locked queues are NULL\n");
+	} 
+	else {		
+		hp1 = (lqheader_t*)lq1p;
+		hp2 = (lqheader_t*)lq2p;
+	
+		pthread_mutex_lock(&(hp1->m));	
+		pthread_mutex_lock(&(hp2->m));	
+		qconcat(hp1->qp,hp2->qp);
+		pthread_mutex_unlock(&(hp1->m));
+		pthread_mutex_unlock(&(hp2->m));
+	}
+	
+}
+
+
+
+
+
+
