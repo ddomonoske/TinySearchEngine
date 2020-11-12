@@ -103,6 +103,7 @@ void lhclose(lhashtable_t *htp) {
 		unlockTable(lhp);
 
 		free(lhp);
+		lhp = NULL;
 		print("Locked hash table closed\n");
 	}
 }
@@ -161,7 +162,7 @@ void *lhsearch(lhashtable_t *htp,
 							 int32_t keylen) {
 
 	lhheader_t *lhp;
-	void *tmp;
+	void *tmp = NULL;
 
 	if (htp == NULL) {
 		print("Locked hash table is NULL\n");
@@ -189,7 +190,7 @@ void *lhremove(lhashtable_t *htp,
 							 int32_t keylen) {
 
 	lhheader_t *lhp;
-	void *tmp;
+	void *tmp = NULL;
 	
 	if (htp == NULL) {
 		print("Locked hash table is null\n");
