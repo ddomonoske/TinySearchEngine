@@ -2,9 +2,9 @@
 echo making object files and executables...
 make &>> /dev/null
 
-mkdir test_dir
+mkdir ../pagesThread
 echo running valgrind...
-valgrind --leak-check=full --show-leak-kinds=all crawler https://thayer.github.io/engs50/ ../pages1 1
+valgrind --leak-check=full --show-leak-kinds=all multiCrawler https://thayer.github.io/engs50/ ../pagesThread 1
 
 echo making clean...
 make clean &>> /dev/null
