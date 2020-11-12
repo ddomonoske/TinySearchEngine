@@ -11,6 +11,9 @@
 /* the queue representation is hidden from users of the module */
 typedef void lqueue_t;		
 
+/* setQueueDelay -- set delay_time */
+void setQueueDelay(uint32_t time);
+
 /* create an empty queue */
 lqueue_t* lqopen(void);        
 

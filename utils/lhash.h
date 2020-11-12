@@ -10,6 +10,9 @@
 
 typedef void lhashtable_t;	/* representation of a hashtable hidden */
 
+/* setHashDelay -- set delay_time */
+void setHashDelay(uint32_t time);
+
 /* hopen -- opens a hash table with initial size hsize */
 lhashtable_t *lhopen(uint32_t hsize);
 

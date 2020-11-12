@@ -27,7 +27,7 @@ static void print(char *message) {
 
 //set value internal to module that sets time to wait between lock and unlock functions
 //will sleep for that amount of time before unlocking
-void setDelay(int time) {
+void setQueueDelay(uint32_t time) {
 	
 	if (time >= 0) {
 		printf("Setting delay time to %d seconds\n",time);
