@@ -1,5 +1,5 @@
 /* 
- * queue.c -- implementation to the locked queue module
+ * lqueue.c -- implementation to the locked queue module
  */
 
 #include "queue.h"
@@ -11,6 +11,7 @@
 
 
 static bool print_message = false; // control printing to screen
+static int delay_time = 0; // control how long all functions that lock wait before unlocking
 
 /* 
  * - prints message to screen with a prefix that includes file name
@@ -18,7 +19,7 @@ static bool print_message = false; // control printing to screen
  */
 static void print(char *message) {
 	if (print_message) {
-		fprintf(stderr,"~hash.c -> ");
+		fprintf(stderr,"~lqueue.c -> ");
 		fprintf(stderr,"%s\n", message);
 	}
 }
@@ -27,9 +28,13 @@ static void print(char *message) {
 //set value internal to module that sets time to wait between lock and unlock functions
 //will sleep for that amount of time before unlocking
 void setDelay(int time) {
-   
-   printf("Sleeping %d seconds\n",time);
-   sleep(time);
+	
+	if (time >= 0) {
+		printf("Setting delay time to %d seconds\n",time);
+		delay_time = time;
+	} else {
+		printf("Delay time must be > 0\n");
+	}
 }
 
 
@@ -97,7 +102,7 @@ int32_t lqput(lqueue_t *lqp, void *elementp) {
 	
 	status = qput(hp->qp,elementp); //puts elementp into lqp
 	
-	setDelay(10);	//hold lock for 10 second
+	sleep(delay_time);	//hold lock for 10 second
 	pthread_mutex_unlock(&(hp->m));
 	printf("lqp unlocked\n");
 	
@@ -207,9 +212,6 @@ void lqconcat(lqueue_t *lq1p, lqueue_t *lq2p) {
 	}
 	
 }
-
-
-
 
 
 

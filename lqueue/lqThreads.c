@@ -98,7 +98,7 @@ void *tfunc2(void *argp) { //function that calls LQPUT
 	cp3 = make_car("car3", 3.0, 1930); //declare all cars
 	//cp4 = make_car("car4", 4.0, 1940);
 	
-	setDelay(5);	//second thread waits 5 seconds before attempting PUT
+	sleep(5);	//second thread waits 5 seconds before attempting PUT
 
 	lqput(lqp,(void*)cp3);
 	//printf("thread 2 gets lock for lqp\n");
@@ -115,6 +115,7 @@ int main (void) {
 	lqueue_t *lqp; //ONE agnostic queue that both threads try to alter
 	lqp = lqopen(); //returns pointer to newly created queue_t
 
+	setDelay(10);
 	
 	if(pthread_create(&tid1,NULL,tfunc1,lqp) != 0 ) {
 		exit(EXIT_FAILURE);
