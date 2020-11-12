@@ -115,7 +115,7 @@ int main (void) {
 	lqueue_t *lqp; //ONE agnostic queue that both threads try to alter
 	lqp = lqopen(); //returns pointer to newly created queue_t
 
-	setDelay(10);
+	setQueueDelay(10);
 	
 	if(pthread_create(&tid1,NULL,tfunc1,lqp) != 0 ) {
 		exit(EXIT_FAILURE);
