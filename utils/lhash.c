@@ -78,6 +78,7 @@ lhashtable_t *lhopen(uint32_t hsize) {
 	lhheader_t *lhp;
 	if ( (lhp = (lhheader_t*)malloc(sizeof(lhheader_t))) == NULL )
 		return NULL;
+
 	lhp->hp = hopen(hsize);
 	pthread_mutex_init(&(lhp->m),NULL);
 	print("New locked hash created\n");
@@ -96,6 +97,7 @@ void lhclose(lhashtable_t *htp) {
 	} else {
 		lhp = (lhheader_t*)htp;
 
+		// lock, close hash table, and unlock
 	  lockTable(lhp);
 		hclose(lhp->hp);
 		unlockTable(lhp);
@@ -121,6 +123,7 @@ int32_t lhput(lhashtable_t *htp, void *ep, const char *key, int keylen) {
 
 	lhp = (lhheader_t*)htp;
 
+	// lock, put element in table, and unlock
 	lockTable(lhp);
 	status = hput(lhp->hp, ep, key, keylen);
 	unlockTable(lhp);
@@ -141,6 +144,7 @@ void lhapply(lhashtable_t *htp, void (*fn)(void* ep)) {
 
 	lhp = (lhheader_t*)htp;
 
+	// lock, apply fn to table, and unlock
 	lockTable(lhp);
 	happly(lhp->hp, fn);
 	unlockTable(lhp);
@@ -166,6 +170,7 @@ void *lhsearch(lhashtable_t *htp,
 
 	lhp = (lhheader_t*)htp;
 
+	// lock, search table for key, and unlock
 	lockTable(lhp);
 	tmp = hsearch(lhp->hp, searchfn, key, keylen);
 	unlockTable(lhp);
@@ -193,6 +198,7 @@ void *lhremove(lhashtable_t *htp,
 
 	lhp = (lhheader_t*)htp;
 
+	// lock, remove key from table, and unlock
 	lockTable(lhp);
 	tmp = hremove(lhp->hp, searchfn, key, keylen);
 	unlockTable(lhp);
