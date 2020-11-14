@@ -16,7 +16,6 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdlib.h> //needed for malloc
-
 #include <unistd.h>
 #include <sys/stat.h>
 #include "pageio.h" //do we need any of these?
@@ -26,8 +25,7 @@
 #include <pthread.h>
 
 
-
-static uint32_t id=1; //GLOBAL VARIABLE so all threads can access
+static uint32_t id = 1; //GLOBAL VARIABLE so all threads can access
 
 /* new structure w/ queue and hash table for crawling - passed as 4th argument for threading */
 typedef struct crawler {
@@ -55,6 +53,19 @@ crawler_t* make_crawler(lqueue_t *lqp, lhashtable_t *lhp, int maxdepth, char *pa
 	return cp;
 } 
 
+
+/* printPage -- used for debugging
+ *  - passed into locked queue of pages at end of each while to see what's in queue
+ */
+void printPage(void *page) {
+	if (page == NULL) {
+		printf("page = NULL???\n");
+	} else {
+		printf("%s\n",webpage_getURL((webpage_t*)page));
+	}
+}
+
+
 /* fn() checks if the car_t pointer matches with the provided key
  * returns bool
  */
@@ -69,6 +80,7 @@ bool fn(void* p, const void* keyp) { //requires (void* elementp, const void* key
 	else
 		return false;
 }
+
 
 /* 
 	function to pass into threading
@@ -89,7 +101,6 @@ void *tcrawl(void *argp) { //function that calls LQPUT
 	cp = (crawler_t*)argp;
 	maxdepth = cp->maxdepth;
 	pagedir = cp->pagedir;
-	
 
 	page = lqget(cp->lqp); //takes out seedURL from lqp. Now we can do the crawling as normal
 
@@ -116,7 +127,7 @@ void *tcrawl(void *argp) { //function that calls LQPUT
 					
 							//STEP 3
 							intPage = (webpage_new(URLresult, currdepth+1, NULL)); //create new webpage_t for each internal URL, assign correct depth
-							lqput(cp->lqp, intPage); //place new webpage_t into queue
+							lqput(cp->lqp, intPage);
 						} 
 						else if ( ! IsInternalURL(URLresult) ) {	//if URL is not internal
 							printf("External url: %s\n", URLresult);
@@ -184,9 +195,6 @@ int main (int argc, char *argv[]) {
 	cp = make_crawler(lqopen(),lhopen(hsize),maxdepth,pagedir); //creates crawler object, lqopen and lhopen return pointers to the newly created objects!
 
 	
-	//qp = qopen();
-	//hp = hopen(hsize);
-		
 	if (NormalizeURL(seedurl)) { //normalize URL	
 		page = (webpage_new(seedurl, 0, NULL)); //create new webpage_t of depth 0
 		URLresult = (char*)malloc(strlen(seedurl)*(sizeof(char)+1));
@@ -203,18 +211,17 @@ int main (int argc, char *argv[]) {
 	if(pthread_create(&tid1,NULL,tcrawl,cp) != 0 ) {
 		exit(EXIT_FAILURE);
 	}
-
 	if(pthread_create(&tid2,NULL,tcrawl,cp) != 0 ) {
 		exit(EXIT_FAILURE);
 	}
-	
+
 	if(pthread_join(tid1,NULL) != 0 ) {
 		exit(EXIT_FAILURE);
 	}
 	if(pthread_join(tid2,NULL) != 0 ) {
 		exit(EXIT_FAILURE);
 	}
-	
+
 	
 	printf("\nTotal: %d web pages stored\n",id-1);
 	
@@ -225,8 +232,7 @@ int main (int argc, char *argv[]) {
 	//DEALLOCATE all memory used
 	lqclose(cp->lqp); //close lqueue
 	lhclose(cp->lhp); //close lhashtable
-	free(cp); 
-	webpage_delete((void*)page); //delete original webpage_t
+	free(cp);
 	
 	webpage_t *retrieve = pageload(1,"../pages"); //load first saved webpage
 	pagesave(retrieve,1,"../pages1"); //save it to a different directory
