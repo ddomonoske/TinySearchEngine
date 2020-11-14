@@ -156,7 +156,7 @@ void *tcrawl(void *argp) { //function that calls LQPUT
 
 int main (int argc, char *argv[]) {
 
-	pthread_t tid1,tid2; //to do multithreading
+	//pthread_t tid1,tid2; //to do multithreading
 	
 	// ** ADD SEEDURL TO QUEUE AND HASH IN CRAWLER_T OBJECT***
 	crawler_t *cp; // single crawler_t object to store lqp and lhp
@@ -166,14 +166,16 @@ int main (int argc, char *argv[]) {
 	char *seedurl;
 	char *URLresult; //pointer to string, used to store each embedded URL during getNextURL
 	char *pagedir;
-	uint32_t maxdepth;
-		
+	uint32_t maxdepth,numThreads;
+
+	pthread_t *threads;
+	
 	FILE *crawlerfp; //pointer to a .crawler file, to indicate that the pagedir is a crawler dir
 
 	// Checking inputs for STEP 6
-	if (argc != 4) {
+	if (argc != 5) {
 		printf("ERROR: Incorrect number of arguments.\n");
-		printf("USAGE: crawler <seedurl> <pagedir> <maxdepth>\n");
+		printf("USAGE: crawler <seedurl> <pagedir> <maxdepth> <numThreads>\n");
 		exit(EXIT_FAILURE);
 	}
 	seedurl = argv[1]; //root URL of crawl
@@ -189,8 +191,16 @@ int main (int argc, char *argv[]) {
 	if (atoi(argv[3]) < 0) {
 		printf("The max depth must be greater than 0.\n");
 		exit(EXIT_FAILURE);
-	} else
+	} else {
 		maxdepth = atoi(argv[3]); //depth of crawl
+	}
+	if (atoi(argv[4]) < 0) {
+		printf("The number of threads must be greater than 0.\n");
+		exit(EXIT_FAILURE);
+	} else {
+		numThreads = atoi(argv[4]);
+		threads = (pthread_t*)malloc(numThreads*sizeof(pthread_t*));
+	}
 	
 	cp = make_crawler(lqopen(),lhopen(hsize),maxdepth,pagedir); //creates crawler object, lqopen and lhopen return pointers to the newly created objects!
 
@@ -207,21 +217,22 @@ int main (int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	} 
 
-	
-	if(pthread_create(&tid1,NULL,tcrawl,cp) != 0 ) {
-		exit(EXIT_FAILURE);
-	}
-	if(pthread_create(&tid2,NULL,tcrawl,cp) != 0 ) {
-		exit(EXIT_FAILURE);
-	}
-
-	if(pthread_join(tid1,NULL) != 0 ) {
-		exit(EXIT_FAILURE);
-	}
-	if(pthread_join(tid2,NULL) != 0 ) {
-		exit(EXIT_FAILURE);
+	// split crawling into multiple threads
+	for (int i=0; i<numThreads; i++) {
+		if (pthread_create(&(threads[i]),NULL,tcrawl,cp) != 0) {
+			printf("failed why creating threads\n");
+			exit(EXIT_FAILURE);
+		}
 	}
 
+	// join threads back into main
+	for (int i=0; i<numThreads; i++) {
+		if (pthread_join(threads[i],NULL) != 0 ) {
+			printf("failed while joining threads\n");
+			exit(EXIT_FAILURE);
+		}
+	}
+	free(threads);
 	
 	printf("\nTotal: %d web pages stored\n",id-1);
 	
