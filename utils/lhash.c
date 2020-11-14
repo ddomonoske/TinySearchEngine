@@ -30,7 +30,7 @@ typedef struct lhheader{
 static void print(char *message) {
 	if (print_message) {
 		fprintf(stderr,"~lhash.c -> ");
-		fprintf(stderr,"%s\n", message);
+		fprintf(stderr,"%s", message);
 	}
 }
 
@@ -62,12 +62,14 @@ static void unlockTable(lhheader_t *lhp) {
 //set value internal to module that sets time to wait between lock and unlock functions
 //will sleep for that amount of time before unlocking
 void setHashDelay(uint32_t time) {
+	char s[40];
 	
 	if (time >= 0) {
-		printf("Setting delay time to %d seconds\n",time);
+		sprintf(s, "Setting delay time to %d seconds.", time);
+		print(s);
 		delay_time = time;
 	} else {
-		printf("Delay time must be > 0\n");
+		print("Delay time must be > 0\n");
 	}
 }
 
