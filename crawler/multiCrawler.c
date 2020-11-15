@@ -142,6 +142,7 @@ void *tcrawl(void *argp) { //function that calls LQPUT
 					}
 					else {
 						printf("Embedded URL cannot be normalized\n"); //and moves into next embedded URL
+						free(URLresult);
 					}
 
 				}
@@ -220,7 +221,7 @@ int main (int argc, char *argv[]) {
 	// split crawling into multiple threads
 	for (int i=0; i<numThreads; i++) {
 		if (pthread_create(&(threads[i]),NULL,tcrawl,cp) != 0) {
-			printf("failed why creating threads\n");
+			printf("failed while creating threads\n");
 			exit(EXIT_FAILURE);
 		}
 	}
