@@ -90,8 +90,8 @@ void *tcrawl(void *argp) { //function that calls LQPUT
 	crawler_t *cp;
 	
 	webpage_t *page; 	//pages fetched
-	webpage_t *intPage; //internal page
-	webpage_t *searchResult = NULL;
+	webpage_t *intPage; //internal pages
+	webpage_t *searchResult = NULL; //to hold return of lhsearch
 	uint32_t currdepth;
 	uint32_t maxdepth;
 	int pos; //used for webpage_getNextURL function
@@ -143,6 +143,7 @@ void *tcrawl(void *argp) { //function that calls LQPUT
 					else {
 						printf("Embedded URL cannot be normalized\n"); //and moves into next embedded URL
 						free(URLresult);
+						URLresult = NULL;
 					}
 
 				}
@@ -163,13 +164,13 @@ int main (int argc, char *argv[]) {
 	crawler_t *cp; // single crawler_t object to store lqp and lhp
 	uint32_t hsize = 6;
 
-	webpage_t *page; //to hold initial page we fetch
-	char *seedurl;
-	char *URLresult; //pointer to string, used to store each embedded URL during getNextURL
-	char *pagedir;
+	webpage_t *page; 	//to hold initial page we fetch
+	char *seedurl; 		//to hold user inputted seedURL to crawl
+	char *URLresult; 	//strcopy(URLresult,seedURL) later on - seems unnecessary
+	char *pagedir;		//to specify directory to store files of crawled pages
 	uint32_t maxdepth,numThreads;
 
-	pthread_t *threads;
+	pthread_t *threads; //array of threads
 	
 	FILE *crawlerfp; //pointer to a .crawler file, to indicate that the pagedir is a crawler dir
 
@@ -203,15 +204,16 @@ int main (int argc, char *argv[]) {
 		threads = (pthread_t*)malloc(numThreads*sizeof(pthread_t*));
 	}
 	
+	
 	cp = make_crawler(lqopen(),lhopen(hsize),maxdepth,pagedir); //creates crawler object, lqopen and lhopen return pointers to the newly created objects!
 
-	
-	if (NormalizeURL(seedurl)) { //normalize URL	
+	// normalize seed URL and add into crawler object
+	if (NormalizeURL(seedurl)) { 	
 		page = (webpage_new(seedurl, 0, NULL)); //create new webpage_t of depth 0
-		URLresult = (char*)malloc(strlen(seedurl)*(sizeof(char)+1));
+		URLresult = (char*)malloc(strlen(seedurl)*(sizeof(char)+1)); //required to account for /0 at end of string
 		strcpy(URLresult,seedurl);
-		lqput(cp->lqp,page); //add seed URL to lqueue (later taken out by lqget in tcrawl function)
-		lhput(cp->lhp,URLresult, URLresult, strlen(URLresult)); // add seed URL to hash table, but not queue
+		lqput(cp->lqp,page); //add seedURL to lqueue (later taken out by lqget in tcrawl function)
+		lhput(cp->lhp,URLresult, URLresult, strlen(URLresult)); // add seedURL to hash table
 	}
 	else {
 		printf("Seed URL cannot be normalized\n");
@@ -244,11 +246,8 @@ int main (int argc, char *argv[]) {
 	//DEALLOCATE all memory used
 	lqclose(cp->lqp); //close lqueue
 	lhclose(cp->lhp); //close lhashtable
-	free(cp);
-	
-	webpage_t *retrieve = pageload(1,"../pages"); //load first saved webpage
-	pagesave(retrieve,1,"../pages1"); //save it to a different directory
-	webpage_delete((void*)retrieve);
+	free(cp);	//free cp pointer
+	//NOTE: no need to free page pointer because it's added into lqp, so freed when lqp is closed
 	
 	exit(EXIT_SUCCESS);  
 }
