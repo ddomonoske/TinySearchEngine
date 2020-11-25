@@ -26,21 +26,28 @@
 
 
 static uint32_t id = 1; //GLOBAL VARIABLE so all threads can access
+static bool *threads_active; // array of bools, one for each thread. Individual threads only close when every bool is false
 
 /* new structure w/ queue and hash table for crawling - passed as 4th argument for threading */
 typedef struct crawler {
-	lqueue_t *lqp;
-	lhashtable_t *lhp;
-	uint32_t maxdepth; //to track depth of crawl
-	char *pagedir; //to save all crawled ids
+  lqueue_t *lqp;
+  lhashtable_t *lhp;
+  uint32_t maxdepth; //to track depth of crawl
+  char *pagedir; //to save all crawled ids
 } crawler_t;
+
+/* new struct to allow each thread to know which thread it is */
+typedef struct crawler4thread {
+  crawler_t cp;
+  uint32_t threadNum; //so each thread knows which one it is
+} crawler4thread_t;
 
 
 /* create crawler_t object with lqp and hqp
  */
 crawler_t* make_crawler(lqueue_t *lqp, lhashtable_t *lhp, int maxdepth, char *pagedir) {
 	
-	crawler_t *cp;
+  crawler_t *cp;
 	
 	if ( !(cp = (crawler_t*)malloc(sizeof(crawler_t))) ) { 	//check if enough space in memory for crawler_t*
 		printf("Error: malloc failed allocating crawler object\n");
@@ -53,6 +60,20 @@ crawler_t* make_crawler(lqueue_t *lqp, lhashtable_t *lhp, int maxdepth, char *pa
 	return cp;
 } 
 
+
+/* create crawler_thread_t for each thread */
+crawler4thread_t* make_c4t(crawler_t* cp, uint32_t n) {
+
+  crawler4thread_t c4tp;
+
+  if ( !(c4tp = (crawler4thread_t*)malloc(sizeof(crawler4thread_t))) ) {
+    printf?("Error: malloc failed allocating crawler4thread object\n");
+    return NULL;
+  }
+  c4tp->cp = cp;
+  c4tp->threadNum = n;
+  return c4tp;
+}
 
 /* printPage -- used for debugging
  *  - passed into locked queue of pages at end of each while to see what's in queue
@@ -88,6 +109,7 @@ bool fn(void* p, const void* keyp) { //requires (void* elementp, const void* key
 void *tcrawl(void *argp) { //function that calls LQPUT
 	
 	crawler_t *cp;
+	uint32_t threadNum;
 	
 	webpage_t *page; 	//pages fetched
 	webpage_t *intPage; //internal pages
@@ -98,9 +120,10 @@ void *tcrawl(void *argp) { //function that calls LQPUT
 	char *URLresult; //pointer to string, used to store each embedded URL during getNextURL
 	char *pagedir;
 	
-	cp = (crawler_t*)argp;
+	cp = (crawler_t*)(argp->cp);
 	maxdepth = cp->maxdepth;
 	pagedir = cp->pagedir;
+	threadNum = argp->threadNum;
 
 	page = lqget(cp->lqp); //takes out seedURL from lqp. Now we can do the crawling as normal
 
@@ -150,7 +173,12 @@ void *tcrawl(void *argp) { //function that calls LQPUT
 			}
 		}
 		webpage_delete((void*)page);
-	} while ((page = lqget(cp->lqp)) != NULL) ; //finishes adding crawled pages into crawler directory
+		page = lqget(cp->lqp);
+		if (page == NULL) {
+		  threads_active[threadNum] = false;
+		} else {
+		  threads_active[threadNum] = true;
+	} while ( page != NULL) ; //finishes adding crawled pages into crawler directory
 
 	return(cp);
 }
@@ -171,6 +199,7 @@ int main (int argc, char *argv[]) {
 	uint32_t maxdepth,numThreads;
 
 	pthread_t *threads; //array of threads
+	crawler4thread_t *crawlers; //array of crawler-threadnum pairs
 	
 	FILE *crawlerfp; //pointer to a .crawler file, to indicate that the pagedir is a crawler dir
 
@@ -202,11 +231,19 @@ int main (int argc, char *argv[]) {
 	} else {
 		numThreads = atoi(argv[4]);
 		threads = (pthread_t*)malloc(numThreads*sizeof(pthread_t*));
+		crawlers = (crawler4thread_t*)malloc(numThreads*sizeof(crawler4thread_t));
+		threads_active = (bool*)malloc(numThreads*sizeof(bool));
 	}
 	
 	
 	cp = make_crawler(lqopen(),lhopen(hsize),maxdepth,pagedir); //creates crawler object, lqopen and lhopen return pointers to the newly created objects!
 
+	// initialize crawler-threadnum pairs, and initialize threads_active as all true
+	for (int i=0; i<numThreads; i++) {
+	  crawlers[i] = make_c4t(cp, i);
+	  threads_active[i] = true;
+	}
+	
 	// normalize seed URL and add into crawler object
 	if (NormalizeURL(seedurl)) { 	
 		page = (webpage_new(seedurl, 0, NULL)); //create new webpage_t of depth 0
@@ -222,7 +259,7 @@ int main (int argc, char *argv[]) {
 
 	// split crawling into multiple threads
 	for (int i=0; i<numThreads; i++) {
-		if (pthread_create(&(threads[i]),NULL,tcrawl,cp) != 0) {
+	        if (pthread_create(&(threads[i]),NULL,tcrawl,crawlers[i]) != 0) {
 			printf("failed while creating threads\n");
 			exit(EXIT_FAILURE);
 		}
@@ -247,6 +284,8 @@ int main (int argc, char *argv[]) {
 	lqclose(cp->lqp); //close lqueue
 	lhclose(cp->lhp); //close lhashtable
 	free(cp);	//free cp pointer
+	free(crawlers);
+	free(threads_active);
 	//NOTE: no need to free page pointer because it's added into lqp, so freed when lqp is closed
 	
 	exit(EXIT_SUCCESS);  
