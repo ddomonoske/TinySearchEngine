@@ -984,5 +984,3 @@ bool webpage_fetch(webpage_t *page) {
 
   return status;
 }
-
-
