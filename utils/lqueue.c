@@ -77,7 +77,6 @@ void lqclose(lqueue_t *lqp) {
 
 		qclose(hp->qp);
 		sleep(delay_time);
-		sleep(delay_time);
 		pthread_mutex_unlock(&(hp->m));
 		print("lqp unlocked");
 		

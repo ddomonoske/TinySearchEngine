@@ -1,14 +1,26 @@
-/* crawler.c --- simply prints hello for now
+/* multicrawler.c --- a threaded version of crawler.c
  * 
  * 
- * Author: Eric Chen
- * Created: Thu Oct 15 13:31:31 2020 (-0400)
- * Modified: Chris Lyke
- *           David Domonoske
- * Version: 
+ * AUTHORS: Eric Chen
+ *          David Domonoske
+ *          Chris Lyke
+ * CREATED: Thu Oct 15 13:31:31 2020 (-0400)
+ *
+ * VERSION: 1.1 - corrected for multiple threads but still only local  ( https://thayer.github.io/engs50/ )
  * 
- * Description: 
+ * DESCRIPTION: crawl the internet for URLs and save html in local text files
  * 
+ *       USAGE: crawler <seedurl> <pagedir> <maxdepth> <numThreads>
+ *
+ *        - begin at <seedurl> and go to a depth of <maxdepth> using <numThreads> number of threads
+ *        - seedurl must be a valid internal URL  ( internal means within https://thayer.github.io/engs50/ )
+ *        - <pagedir> must be a directory and already exist
+ *        - all html pages crawled will be stored locally as a text file inside <pagedir>
+ *        - <maxdepth> must be an integer ≥ 0
+ *        - a <maxdepth> of 0 corresponds to the <seedurl>
+ *        - <numThreads> must be a positive integer
+ *        - fetching pages, saving html to local file, and parsing html is divided into <numThreads> threads
+ *
  */
 
 
@@ -22,25 +34,20 @@
 #include "webpage.h"
 #include "lqueue.h"
 #include "lhash.h"
+#include "lcounter.h"
 #include <pthread.h>
 
 
 static uint32_t id = 1; //GLOBAL VARIABLE so all threads can access
-static bool *threads_active; // array of bools, one for each thread. Individual threads only close when every bool is false
+static lcounter_t *num_active_threads; // count of number of active threads
 
-/* new structure w/ queue and hash table for crawling - passed as 4th argument for threading */
+/* structure w/ queue and hash table for crawling - passed as 4th argument for threading */
 typedef struct crawler {
   lqueue_t *lqp;
   lhashtable_t *lhp;
   uint32_t maxdepth; //to track depth of crawl
   char *pagedir; //to save all crawled ids
 } crawler_t;
-
-/* new struct to allow each thread to know which thread it is */
-typedef struct crawler4thread {
-  crawler_t cp;
-  uint32_t threadNum; //so each thread knows which one it is
-} crawler4thread_t;
 
 
 /* create crawler_t object with lqp and hqp
@@ -60,20 +67,6 @@ crawler_t* make_crawler(lqueue_t *lqp, lhashtable_t *lhp, int maxdepth, char *pa
 	return cp;
 } 
 
-
-/* create crawler_thread_t for each thread */
-crawler4thread_t* make_c4t(crawler_t* cp, uint32_t n) {
-
-  crawler4thread_t c4tp;
-
-  if ( !(c4tp = (crawler4thread_t*)malloc(sizeof(crawler4thread_t))) ) {
-    printf?("Error: malloc failed allocating crawler4thread object\n");
-    return NULL;
-  }
-  c4tp->cp = cp;
-  c4tp->threadNum = n;
-  return c4tp;
-}
 
 /* printPage -- used for debugging
  *  - passed into locked queue of pages at end of each while to see what's in queue
@@ -103,13 +96,10 @@ bool fn(void* p, const void* keyp) { //requires (void* elementp, const void* key
 }
 
 
-/* 
-	function to pass into threading
-*/
+/* function to pass into threading */
 void *tcrawl(void *argp) { //function that calls LQPUT
-	
 	crawler_t *cp;
-	uint32_t threadNum;
+	bool isWorking;
 	
 	webpage_t *page; 	//pages fetched
 	webpage_t *intPage; //internal pages
@@ -119,14 +109,19 @@ void *tcrawl(void *argp) { //function that calls LQPUT
 	int pos; //used for webpage_getNextURL function
 	char *URLresult; //pointer to string, used to store each embedded URL during getNextURL
 	char *pagedir;
-	
-	cp = (crawler_t*)(argp->cp);
+
+	cp = (crawler_t*)argp;
 	maxdepth = cp->maxdepth;
 	pagedir = cp->pagedir;
-	threadNum = argp->threadNum;
-
+	
 	page = lqget(cp->lqp); //takes out seedURL from lqp. Now we can do the crawling as normal
-
+	if (page == NULL)
+		isWorking = false;
+	else {
+		isWorking = true;
+		incCount(num_active_threads);
+	}
+	
 	do {  // STEP 6: loop through all the pages
 		currdepth = webpage_getDepth(page);
 		if (webpage_fetch(page)) { //fetch webpage HTML of new webpage_t, returns true if success
@@ -140,7 +135,6 @@ void *tcrawl(void *argp) { //function that calls LQPUT
 					//assign each URL string found to URLresult, continue until no more embedded URLs
 
 					if (NormalizeURL(URLresult)) { //normalize URL found
-						
 						//STEP 4
 						searchResult = lhsearch(cp->lhp, fn, URLresult, strlen(URLresult)); //search for URL in hashtable, return NULL if not found
 				
@@ -151,44 +145,41 @@ void *tcrawl(void *argp) { //function that calls LQPUT
 							//STEP 3
 							intPage = (webpage_new(URLresult, currdepth+1, NULL)); //create new webpage_t for each internal URL, assign correct depth
 							lqput(cp->lqp, intPage);
-						} 
-						else if ( ! IsInternalURL(URLresult) ) {	//if URL is not internal
+						} else if ( ! IsInternalURL(URLresult) ) {	//if URL is not internal
 							printf("External url: %s\n", URLresult);
 							free(URLresult);
 							URLresult = NULL;
-						}
-						else {	//if URL is has already been checked (aka found in hash table)
+						} else {	//if URL is has already been checked (aka found in hash table)
 							free(URLresult);
 							URLresult = NULL;
 						}
-						
-					}
-					else {
+					} else {
 						printf("Embedded URL cannot be normalized\n"); //and moves into next embedded URL
 						free(URLresult);
 						URLresult = NULL;
 					}
-
 				}
 			}
 		}
 		webpage_delete((void*)page);
+
 		page = lqget(cp->lqp);
 		if (page == NULL) {
-		  threads_active[threadNum] = false;
-		} else {
-		  threads_active[threadNum] = true;
-	} while ( page != NULL) ; //finishes adding crawled pages into crawler directory
-
-	return(cp);
+			if (isWorking) {
+				decCount(num_active_threads);
+			}
+			sleep(1);
+		} else if ((page != NULL) && (!isWorking)) {
+			incCount(num_active_threads);
+		}
+		printf("number of active threads: %d\n", getCount(num_active_threads));
+	} while (getCount(num_active_threads) > 0); //finishes adding crawled pages into crawler directory
+	
+	return cp;
 }
 
 
 int main (int argc, char *argv[]) {
-
-	//pthread_t tid1,tid2; //to do multithreading
-	
-	// ** ADD SEEDURL TO QUEUE AND HASH IN CRAWLER_T OBJECT***
 	crawler_t *cp; // single crawler_t object to store lqp and lhp
 	uint32_t hsize = 6;
 
@@ -199,8 +190,7 @@ int main (int argc, char *argv[]) {
 	uint32_t maxdepth,numThreads;
 
 	pthread_t *threads; //array of threads
-	crawler4thread_t *crawlers; //array of crawler-threadnum pairs
-	
+		
 	FILE *crawlerfp; //pointer to a .crawler file, to indicate that the pagedir is a crawler dir
 
 	// Checking inputs for STEP 6
@@ -231,18 +221,10 @@ int main (int argc, char *argv[]) {
 	} else {
 		numThreads = atoi(argv[4]);
 		threads = (pthread_t*)malloc(numThreads*sizeof(pthread_t*));
-		crawlers = (crawler4thread_t*)malloc(numThreads*sizeof(crawler4thread_t));
-		threads_active = (bool*)malloc(numThreads*sizeof(bool));
 	}
 	
 	
 	cp = make_crawler(lqopen(),lhopen(hsize),maxdepth,pagedir); //creates crawler object, lqopen and lhopen return pointers to the newly created objects!
-
-	// initialize crawler-threadnum pairs, and initialize threads_active as all true
-	for (int i=0; i<numThreads; i++) {
-	  crawlers[i] = make_c4t(cp, i);
-	  threads_active[i] = true;
-	}
 	
 	// normalize seed URL and add into crawler object
 	if (NormalizeURL(seedurl)) { 	
@@ -257,9 +239,10 @@ int main (int argc, char *argv[]) {
 		exit(EXIT_FAILURE);
 	} 
 
+	num_active_threads = openCount(); // begin thread counter with default count = 0
 	// split crawling into multiple threads
 	for (int i=0; i<numThreads; i++) {
-	        if (pthread_create(&(threads[i]),NULL,tcrawl,crawlers[i]) != 0) {
+		if (pthread_create(&(threads[i]),NULL,tcrawl,cp) != 0) {
 			printf("failed while creating threads\n");
 			exit(EXIT_FAILURE);
 		}
@@ -284,9 +267,7 @@ int main (int argc, char *argv[]) {
 	lqclose(cp->lqp); //close lqueue
 	lhclose(cp->lhp); //close lhashtable
 	free(cp);	//free cp pointer
-	free(crawlers);
-	free(threads_active);
-	//NOTE: no need to free page pointer because it's added into lqp, so freed when lqp is closed
+	closeCount(num_active_threads); //close thread counter
 	
 	exit(EXIT_SUCCESS);  
 }
