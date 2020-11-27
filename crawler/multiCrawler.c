@@ -167,11 +167,14 @@ void *tcrawl(void *argp) { //function that calls LQPUT
 		if (page == NULL) {
 			if (isWorking) {
 				decCount(num_active_threads);
-			}
+				printf("decrementing\n");
+			} else printf("NULL again\n");
 			sleep(1);
-		} else if ((page != NULL) && (!isWorking)) {
+		} else if (!isWorking) {
 			incCount(num_active_threads);
-		}
+			printf("incrementing\n");
+		} else printf("working again\n");
+		
 		printf("number of active threads: %d\n", getCount(num_active_threads));
 	} while (getCount(num_active_threads) > 0); //finishes adding crawled pages into crawler directory
 	
